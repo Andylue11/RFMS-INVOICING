@@ -1,0 +1,168 @@
+
+New
++161
+-0
+
+{% extends 'base.html' %}
+{% block title %}Invoice {{ invoice.invoice_number }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-0">Invoice {{ invoice.invoice_number }}</h2>
+            <p class="text-muted mb-0">Order {{ work_order.order_number }} • Job {{ work_order.job_number or 'N/A' }}</p>
+        </div>
+        <div>
+            <a href="{{ url_for('portal.dashboard') }}" class="btn btn-outline-secondary">Back to dashboard</a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    <h5 class="card-title mb-0">Line Items</h5>
+                    <small class="text-muted">Pre-loaded from RFMS where available. Add or edit to suit.</small>
+                </div>
+                <button class="btn btn-outline-primary btn-sm" type="button" id="add-line">Add line</button>
+            </div>
+            <form method="post" enctype="multipart/form-data">
+                <div class="table-responsive mb-3">
+                    <table class="table align-middle" id="lines-table">
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th style="width: 120px;">Quantity</th>
+                                <th style="width: 140px;">Unit price</th>
+                                <th style="width: 140px;">Tax rate</th>
+                                <th style="width: 140px;">Line total</th>
+                                <th style="width: 80px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for line in invoice.lines %}
+                            <tr>
+                                <td>
+                                    <input type="hidden" name="line_id[]" value="{{ line.id }}">
+                                    <input type="text" class="form-control" name="description[]" value="{{ line.description }}" required>
+                                </td>
+                                <td><input type="number" step="0.01" min="0" class="form-control" name="quantity[]" value="{{ '%.2f'|format(line.quantity) }}" required></td>
+                                <td><input type="number" step="0.01" min="0" class="form-control" name="unit_price[]" value="{{ '%.2f'|format(line.unit_price) }}" required></td>
+                                <td><input type="number" step="0.01" min="0" class="form-control" name="tax_rate[]" value="{{ '%.2f'|format(line.tax_rate) }}" required></td>
+                                <td class="fw-semibold">{{ '%.2f'|format(line.total) }}</td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-link text-danger p-0 remove-line"><i class="fa fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% if not invoice.lines %}
+                            <tr>
+                                <td>
+                                    <input type="hidden" name="line_id[]" value="">
+                                    <input type="text" class="form-control" name="description[]" placeholder="Description" required>
+                                </td>
+                                <td><input type="number" step="0.01" min="0" class="form-control" name="quantity[]" value="0" required></td>
+                                <td><input type="number" step="0.01" min="0" class="form-control" name="unit_price[]" value="0" required></td>
+                                <td><input type="number" step="0.01" min="0" class="form-control" name="tax_rate[]" value="0.10" required></td>
+                                <td class="fw-semibold">0.00</td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-link text-danger p-0 remove-line"><i class="fa fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-lg-8">
+                        <label class="form-label">Notes to A to Z Flooring</label>
+                        <textarea class="form-control" rows="3" name="notes">{{ invoice.notes or '' }}</textarea>
+                    </div>
+                    <div class="col-lg-4">
+                        <dl class="row mb-0">
+                            <dt class="col-6">Subtotal</dt>
+                            <dd class="col-6 text-end" id="subtotal">{{ '%.2f'|format(invoice.subtotal or 0) }}</dd>
+                            <dt class="col-6">Tax</dt>
+                            <dd class="col-6 text-end" id="tax">{{ '%.2f'|format(invoice.tax_amount or 0) }}</dd>
+                            <dt class="col-6">Total</dt>
+                            <dd class="col-6 text-end fw-bold" id="total">{{ '%.2f'|format(invoice.total or 0) }}</dd>
+                        </dl>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Upload photos or documents</label>
+                    <input type="file" name="attachments" multiple class="form-control" accept="image/*,application/pdf">
+                    {% if invoice.attachments %}
+                    <div class="small text-muted mt-1">Existing attachments: {{ invoice.attachments|length }}</div>
+                    {% endif %}
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="submit" name="action" value="save" class="btn btn-outline-secondary">Save draft</button>
+                    <button type="submit" name="action" value="submit" class="btn btn-primary">Submit invoice</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const linesTable = document.getElementById('lines-table').querySelector('tbody');
+    const subtotalEl = document.getElementById('subtotal');
+    const taxEl = document.getElementById('tax');
+    const totalEl = document.getElementById('total');
+
+    function recalc() {
+        let subtotal = 0;
+        let tax = 0;
+        linesTable.querySelectorAll('tr').forEach((row) => {
+            const qty = parseFloat(row.querySelector('input[name="quantity[]"]').value || '0');
+            const unit = parseFloat(row.querySelector('input[name="unit_price[]"]').value || '0');
+            const taxRate = parseFloat(row.querySelector('input[name="tax_rate[]"]').value || '0');
+            const lineSubtotal = qty * unit;
+            const lineTax = lineSubtotal * taxRate;
+            subtotal += lineSubtotal;
+            tax += lineTax;
+            row.querySelector('td.fw-semibold').innerText = (lineSubtotal + lineTax).toFixed(2);
+        });
+        subtotalEl.innerText = subtotal.toFixed(2);
+        taxEl.innerText = tax.toFixed(2);
+        totalEl.innerText = (subtotal + tax).toFixed(2);
+    }
+
+    function bindEvents(row) {
+        row.querySelectorAll('input').forEach((input) => {
+            input.addEventListener('input', recalc);
+        });
+        const removeBtn = row.querySelector('.remove-line');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                row.remove();
+                recalc();
+            });
+        }
+    }
+
+    document.querySelectorAll('#lines-table tbody tr').forEach(bindEvents);
+
+    document.getElementById('add-line').addEventListener('click', () => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <input type="hidden" name="line_id[]" value="">
+                <input type="text" class="form-control" name="description[]" placeholder="Description" required>
+            </td>
+            <td><input type="number" step="0.01" min="0" class="form-control" name="quantity[]" value="0" required></td>
+            <td><input type="number" step="0.01" min="0" class="form-control" name="unit_price[]" value="0" required></td>
+            <td><input type="number" step="0.01" min="0" class="form-control" name="tax_rate[]" value="0.10" required></td>
+            <td class="fw-semibold">0.00</td>
+            <td class="text-end">
+                <button type="button" class="btn btn-link text-danger p-0 remove-line"><i class="fa fa-trash"></i></button>
+            </td>
+        `;
+        linesTable.appendChild(row);
+        bindEvents(row);
+    });
+</script>
+{% endblock %}
+templates/portal_dashboard.html
+New
