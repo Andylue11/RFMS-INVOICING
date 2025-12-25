@@ -96,9 +96,21 @@ New
                     <div class="small text-muted mt-1">Existing attachments: {{ invoice.attachments|length }}</div>
                     {% endif %}
                 </div>
-                <div class="d-flex justify-content-end gap-2">
-                    <button type="submit" name="action" value="save" class="btn btn-outline-secondary">Save draft</button>
-                    <button type="submit" name="action" value="submit" class="btn btn-primary">Submit invoice</button>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex gap-2">
+                        {% if invoice.status == 'submitted' %}
+                        <a href="{{ url_for('portal.export_invoice_xero', invoice_id=invoice.id) }}" class="btn btn-outline-success">
+                            <i class="fa fa-download me-2"></i>Export to Xero (CSV)
+                        </a>
+                        <a href="{{ url_for('portal.export_invoice_pdf', invoice_id=invoice.id) }}" class="btn btn-outline-primary">
+                            <i class="fa fa-file-pdf me-2"></i>Download PDF
+                        </a>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" name="action" value="save" class="btn btn-outline-secondary">Save draft</button>
+                        <button type="submit" name="action" value="submit" class="btn btn-primary">Submit invoice</button>
+                    </div>
                 </div>
             </form>
         </div>
