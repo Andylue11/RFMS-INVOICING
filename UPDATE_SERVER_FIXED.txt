@@ -1,0 +1,32 @@
+==========================================
+RFMS-Uploader Server Update - FIXED
+==========================================
+
+The issue was GitHub SSH host key verification.
+
+Run this complete command:
+
+ssh atoz@AtozServer 'cd /volume1/docker/rfms-uploader && mkdir -p ~/.ssh && chmod 700 ~/.ssh && ssh-keyscan -t rsa,ecdsa,ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null && chmod 600 ~/.ssh/known_hosts && git remote set-url origin git@github.com:Andylue11/RFMS-UPLOADER.git && git pull origin main && docker-compose down && docker-compose build --no-cache && docker-compose up -d'
+
+OR use the script:
+./update-server-fixed.sh
+
+==========================================
+Alternative: Use HTTPS with Personal Access Token
+==========================================
+
+If SSH still doesn't work, use HTTPS with a token:
+
+1. Create a GitHub Personal Access Token:
+   - Go to: https://github.com/settings/tokens
+   - Generate new token (classic)
+   - Select "repo" scope
+   - Copy the token
+
+2. Update using token:
+   ssh atoz@AtozServer 'cd /volume1/docker/rfms-uploader && git remote set-url origin https://YOUR_TOKEN@github.com/Andylue11/RFMS-UPLOADER.git && git pull origin main && docker-compose down && docker-compose build --no-cache && docker-compose up -d'
+
+Replace YOUR_TOKEN with your actual token.
+
+==========================================
+

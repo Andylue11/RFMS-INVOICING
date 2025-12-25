@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+
+{% block title %}History - RFMS Uploader{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-history"></i> Processing History</h1>
+            <p class="text-muted">View all processed documents with filtering and search capabilities</p>
+        </div>
+    </div>
+
+    <!-- Filter and Search Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row mb-2">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Filter by Type:</label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Search:</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <div class="btn-group w-100" role="group">
+                        <button type="button" 
+                                class="btn btn-outline-primary {% if current_filter == 'all' %}active{% endif %}"
+                                onclick="filterResults('all')">
+                            <i class="fas fa-list"></i> All Documents
+                        </button>
+                        <button type="button" 
+                                class="btn btn-outline-success {% if current_filter == 'quotes' %}active{% endif %}"
+                                onclick="filterResults('quotes')">
+                            <i class="fas fa-file-invoice-dollar"></i> Quotes
+                        </button>
+                        <button type="button" 
+                                class="btn btn-outline-info {% if current_filter == 'workorders' %}active{% endif %}"
+                                onclick="filterResults('workorders')">
+                            <i class="fas fa-tasks"></i> Work Orders
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" 
+                               class="form-control" 
+                               id="searchInput" 
+                               placeholder="Search by PO number, customer, filename, RFMS doc#..." 
+                               value="{{ search_query }}"
+                               onkeyup="handleSearchInput(event)">
+                        {% if search_query %}
+                        <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Count -->
+    <div class="mb-3">
+        <span class="badge bg-secondary fs-6" id="resultsCount">
+            <i class="fas fa-file-alt"></i> <span id="countNumber">0</span> document(s) found
+        </span>
+    </div>
+
+    <!-- History Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0" id="historyTable">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th style="width: 5%;">ID</th>
+                            <th style="width: 15%;">PO Number</th>
+                            <th style="width: 10%;">Type</th>
+                            <th style="width: 15%;">Customer</th>
+                            <th style="width: 10%;">RFMS Doc#</th>
+                            <th style="width: 10%;">Status</th>
+                            <th style="width: 10%;">Amount</th>
+                            <th style="width: 15%;">Filename</th>
+                            <th style="width: 10%;">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <!-- Results will be loaded here via AJAX -->
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading history...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="emptyState" class="text-center py-5" style="display: none;">
+                <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No processed documents found</h4>
+                <p class="text-muted">Try adjusting your search criteria or upload some PDFs</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .history-row {
+        transition: background-color 0.2s ease;
+    }
+    
+    .history-row:hover {
+        background-color: #e3f2fd !important;
+        transform: scale(1.01);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .table-responsive {
+        max-height: calc(100vh - 400px);
+        overflow-y: auto;
+    }
+    
+    .sticky-top {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .text-truncate {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+</style>
+
+<script>
+    let searchTimeout = null;
+    let currentFilter = 'all';
+
+    // Load data on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadHistory();
+    });
+
+    // Handle filter buttons
+    function filterResults(filterType) {
+        currentFilter = filterType;
+        
+        // Update active button state
+        document.querySelectorAll('.btn-group button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.closest('button').classList.add('active');
+        
+        // Load filtered results
+        loadHistory();
+    }
+
+    // Handle search input with debouncing
+    function handleSearchInput(event) {
+        // Clear previous timeout
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+        
+        // If Enter key is pressed, search immediately
+        if (event.key === 'Enter') {
+            loadHistory();
+            return;
+        }
+        
+        // Otherwise, wait 300ms before searching (faster response)
+        searchTimeout = setTimeout(function() {
+            loadHistory();
+        }, 300);
+    }
+
+    function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        loadHistory();
+    }
+
+    // Load history via AJAX
+    function loadHistory() {
+        const searchValue = document.getElementById('searchInput').value;
+        const params = new URLSearchParams();
+        
+        params.append('filter', currentFilter);
+        if (searchValue.trim()) {
+            params.append('search', searchValue);
+        }
+        
+        // Show loading state
+        const tbody = document.getElementById('historyTableBody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="9" class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <span class="ms-2">Searching...</span>
+                </td>
+            </tr>
+        `;
+        
+        // Fetch data
+        fetch(`/api/history/search?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renderResults(data.items);
+                    updateCount(data.count);
+                } else {
+                    showError('Failed to load history');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading history:', error);
+                showError('Error loading history');
+            });
+    }
+
+    // Render results in table
+    function renderResults(items) {
+        const tbody = document.getElementById('historyTableBody');
+        const emptyState = document.getElementById('emptyState');
+        
+        if (items.length === 0) {
+            tbody.innerHTML = '';
+            emptyState.style.display = 'block';
+            return;
+        }
+        
+        emptyState.style.display = 'none';
+        
+        let html = '';
+        items.forEach(item => {
+            const docTypeBadge = getDocTypeBadge(item.document_type);
+            const statusBadge = getStatusBadge(item.rfms_status);
+            const customerDisplay = getCustomerDisplay(item);
+            const dateObj = new Date(item.created_at);
+            
+            html += `
+                <tr class="history-row" data-pdf-id="${item.id}" style="cursor: pointer;" ondblclick="openPreview(${item.id})">
+                    <td class="align-middle">
+                        <span class="badge bg-secondary">${item.id}</span>
+                    </td>
+                    <td class="align-middle">
+                        <strong>${item.po_number}</strong>
+                    </td>
+                    <td class="align-middle">${docTypeBadge}</td>
+                    <td class="align-middle">${customerDisplay}</td>
+                    <td class="align-middle">
+                        ${item.rfms_document_number ? 
+                            `<code class="bg-light px-2 py-1 rounded">${item.rfms_document_number}</code>` : 
+                            '<span class="text-muted">-</span>'}
+                    </td>
+                    <td class="align-middle">${statusBadge}</td>
+                    <td class="align-middle">
+                        ${item.dollar_value ? 
+                            `<strong>$${parseFloat(item.dollar_value).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>` : 
+                            '<span class="text-muted">-</span>'}
+                    </td>
+                    <td class="align-middle">
+                        <small class="text-truncate d-inline-block" style="max-width: 200px;" title="${item.filename}">
+                            <i class="fas fa-file-pdf text-danger"></i> ${item.filename}
+                        </small>
+                    </td>
+                    <td class="align-middle">
+                        <small>
+                            ${item.created_at.split(' ')[0]}<br>
+                            <span class="text-muted">${item.created_at.split(' ')[1]}</span>
+                        </small>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    }
+
+    function getDocTypeBadge(docType) {
+        if (docType === 'quotation') {
+            return '<span class="badge bg-success"><i class="fas fa-file-invoice-dollar"></i> Quote</span>';
+        } else if (docType === 'purchase_order' || docType === 'work_order') {
+            return '<span class="badge bg-info"><i class="fas fa-tasks"></i> Work Order</span>';
+        } else {
+            return `<span class="badge bg-secondary"><i class="fas fa-file"></i> ${docType}</span>`;
+        }
+    }
+
+    function getStatusBadge(status) {
+        const badges = {
+            'new_order': '<span class="badge bg-primary">New Order</span>',
+            'new_quote': '<span class="badge bg-success">New Quote</span>',
+            'existing_order': '<span class="badge bg-warning text-dark">Existing Order</span>',
+            'existing_quote': '<span class="badge bg-warning text-dark">Existing Quote</span>',
+            'billing_group_added': '<span class="badge bg-info">Billing Added</span>'
+        };
+        return badges[status] || `<span class="badge bg-secondary">${status || 'Unknown'}</span>`;
+    }
+
+    function getCustomerDisplay(item) {
+        if (item.customer_name) {
+            return `<div><i class="fas fa-user"></i> ${item.customer_name}</div>`;
+        } else if (item.business_name) {
+            return `<div><i class="fas fa-building"></i> ${item.business_name}</div>`;
+        } else {
+            return '<span class="text-muted">No customer</span>';
+        }
+    }
+
+    function updateCount(count) {
+        document.getElementById('countNumber').textContent = count;
+    }
+
+    function openPreview(pdfId) {
+        window.location.href = `/preview/${pdfId}`;
+    }
+
+    function showError(message) {
+        const tbody = document.getElementById('historyTableBody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="9" class="text-center py-5 text-danger">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                    <p>${message}</p>
+                </td>
+            </tr>
+        `;
+    }
+</script>
+{% endblock %}
+

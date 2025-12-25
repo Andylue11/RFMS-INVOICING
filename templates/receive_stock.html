@@ -1,0 +1,1749 @@
+{% extends "base.html" %}
+
+{% block title %}Receive Stock - RFMS Uploader{% endblock %}
+
+{% block content %}
+<style>
+    /* Mobile-specific optimizations */
+    @media (max-width: 768px) {
+        /* Larger touch targets for mobile */
+        .btn {
+            min-height: 44px;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+        }
+        
+        /* Better spacing on mobile */
+        .card-body {
+            padding: 1rem;
+        }
+        
+        /* Larger form inputs for mobile */
+        .form-control, .form-select {
+            font-size: 16px; /* Prevents zoom on iOS */
+            min-height: 44px;
+            padding: 0.5rem 0.75rem;
+        }
+        
+        /* File input styling for mobile */
+        input[type="file"] {
+            font-size: 16px;
+            padding: 0.5rem;
+        }
+        
+        /* Table optimizations for mobile */
+        .table-responsive {
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid #dee2e6;
+        }
+        
+        .table {
+            font-size: 0.875rem;
+        }
+        
+        .table th, .table td {
+            padding: 0.5rem 0.25rem;
+            white-space: nowrap;
+        }
+        
+        /* Smaller headers on mobile */
+        h1 {
+            font-size: 1.5rem;
+        }
+        
+        h5 {
+            font-size: 1.1rem;
+        }
+        
+        /* Better checkbox sizing */
+        .form-check-input {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-top: 0.25rem;
+        }
+        
+        /* Input group adjustments */
+        .input-group-text {
+            font-size: 0.875rem;
+            padding: 0.5rem 0.75rem;
+        }
+        
+        /* Modal adjustments for mobile */
+        .modal-dialog {
+            margin: 0.5rem;
+            max-width: calc(100% - 1rem);
+        }
+        
+        .modal-content {
+            border-radius: 0.5rem;
+        }
+        
+        /* Better spacing in forms */
+        .mb-3 {
+            margin-bottom: 1rem !important;
+        }
+        
+        /* Card header adjustments */
+        .card-header {
+            padding: 0.75rem 1rem;
+        }
+        
+        /* Smaller text helpers */
+        .form-text {
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+        
+        /* Container padding on mobile */
+        .container-fluid {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+        
+        /* Table cell text truncation */
+        .table td {
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* Number inputs */
+        input[type="number"] {
+            font-size: 16px; /* Prevents zoom on iOS */
+        }
+        
+        /* Date inputs */
+        input[type="date"] {
+            font-size: 16px; /* Prevents zoom on iOS */
+        }
+    }
+    
+    /* Disabled line styling */
+    .table-secondary {
+        background-color: #f8f9fa !important;
+    }
+    
+    .table-secondary td {
+        color: #6c757d;
+    }
+    
+    .table-secondary input:disabled {
+        background-color: #e9ecef !important;
+        cursor: not-allowed;
+    }
+    
+    /* Extra small devices (phones in portrait) */
+    @media (max-width: 576px) {
+        h1 {
+            font-size: 1.25rem;
+        }
+        
+        .table {
+            font-size: 0.75rem;
+        }
+        
+        .table th, .table td {
+            padding: 0.375rem 0.125rem;
+        }
+        
+        .btn {
+            font-size: 0.875rem;
+            padding: 0.5rem 0.75rem;
+        }
+        
+        .card-body {
+            padding: 0.75rem;
+        }
+    }
+    
+    /* Ensure tables are scrollable on all devices */
+    .table-responsive {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Better button spacing on mobile */
+    @media (max-width: 768px) {
+        .btn + .btn {
+            margin-top: 0.5rem;
+        }
+    }
+</style>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+                <h1 class="mb-2 mb-md-0"><i class="fas fa-box"></i> Receive In & Cost Stock</h1>
+                <a href="/" class="btn btn-outline-primary w-100 w-md-auto">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-box"></i> Enter Order Details</h5>
+                </div>
+                <div class="card-body">
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="orderNumberInput" class="form-label">Order Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">AZ</span>
+                                    <input type="text" class="form-control" id="orderNumberInput" name="orderNumber" 
+                                           placeholder="e.g., 003550" pattern="^[0-9]+(-[0-9]+)?$">
+                                </div>
+                                <div class="form-text">Enter order number to skip AI extraction and load order directly</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="consignmentFile" class="form-label">Photo or Doc of Con Note / Packing List</label>
+                                <input type="file" class="form-control" id="consignmentFile" name="file" 
+                                       accept="image/*,application/pdf" capture="environment">
+                                <div class="form-text">Take a Photo, Choose from gallery or Upload PDF file of Con Note / Packing Slip / Suppliers Invoices (optional if order number provided)</div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 w-md-auto" id="uploadBtn">
+                            <i class="fas fa-play"></i> Begin Receiving
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Process Status Panel -->
+    <div class="row mb-4" id="statusPanelSection">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tasks"></i> Process Status - Live View
+                    </h5>
+                    <button type="button" class="btn btn-sm btn-light" onclick="clearStatusPanel()" title="Clear status messages">
+                        <i class="fas fa-eraser"></i> Clear
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="statusPanel" style="max-height: 400px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 0.9rem; min-height: 50px;">
+                        <div class="text-muted">
+                            <i class="fas fa-info-circle"></i> Status messages will appear here as you process orders...
+                            <br><small>Enter an order number or upload a document to begin.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extracted Information -->
+    <div class="row mb-4" id="extractedInfoSection" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-info-circle"></i> Extracted Information</h5>
+                </div>
+                <div class="card-body">
+                    <div id="extractedInfo"></div>
+                    <button type="button" class="btn btn-primary mt-3" id="searchBtn">
+                        <i class="fas fa-search"></i> Search for Orders
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Results -->
+    <div class="row mb-4" id="searchResultsSection" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-list"></i> Search Results</h5>
+                </div>
+                <div class="card-body">
+                    <div id="searchResults"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receiving Form -->
+    <div class="row mb-4" id="receiveFormSection" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-check-circle"></i> Receive Inventory</h5>
+                </div>
+                <div class="card-body">
+                    <form id="receiveForm">
+                        <input type="hidden" id="selectedOrderNumber">
+                        <div class="mb-3">
+                            <label for="orderDate" class="form-label">Receival Date</label>
+                            <input type="date" class="form-control" id="orderDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Product Lines to Receive</label>
+                            <div id="lineNumbersContainer"></div>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100 w-md-auto" id="receiveBtn">
+                            <i class="fas fa-check"></i> Receive Stock
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal for Order Number Mismatch -->
+<div class="modal fade" id="orderMismatchModal" tabindex="-1" aria-labelledby="orderMismatchModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="orderMismatchModalLabel">
+                    <i class="fas fa-exclamation-triangle"></i> Order Number Mismatch
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <strong>Error:</strong> The consignment note does not match the RFMS order number entered.
+                </div>
+                <p><strong>Entered Order Number:</strong> <code id="enteredOrderNumber"></code></p>
+                <p><strong>Consignment Note Order Number:</strong> <code id="extractedOrderNumber"></code></p>
+                <p class="mb-0">Please verify the order number and consignment note match, then restart the process.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="resetReceiveStockForm()">
+                    <i class="fas fa-redo"></i> Start Over
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Version: 2025-12-12-01 - Fixed const assignment error
+let extractedData = null;
+let invoiceData = null; // Store invoice data if full invoice is uploaded
+let searchResults = null;
+let enteredOrderNumber = null; // Store the order number entered by user for validation
+
+// Status panel management
+function showStatusPanel() {
+    const panelSection = document.getElementById('statusPanelSection');
+    if (panelSection) {
+        panelSection.style.display = 'block';
+        // Clear the initial message if it's still there
+        const panel = document.getElementById('statusPanel');
+        if (panel && panel.innerHTML.includes('Status messages will appear here')) {
+            panel.innerHTML = '';
+        }
+        panelSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+function addStatusMessage(message, type = 'info') {
+    // Ensure panel is visible
+    ensureStatusPanelVisible();
+    showStatusPanel();
+    
+    const panel = document.getElementById('statusPanel');
+    if (!panel) {
+        console.error('Status panel element not found');
+        return;
+    }
+    
+    // Clear initial placeholder message if it exists
+    if (panel.innerHTML.includes('Status messages will appear here')) {
+        panel.innerHTML = '';
+    }
+    
+    const timestamp = new Date().toLocaleTimeString();
+    const iconMap = {
+        'info': '<i class="fas fa-info-circle text-info"></i>',
+        'success': '<i class="fas fa-check-circle text-success"></i>',
+        'warning': '<i class="fas fa-exclamation-triangle text-warning"></i>',
+        'error': '<i class="fas fa-times-circle text-danger"></i>',
+        'loading': '<i class="fas fa-spinner fa-spin text-primary"></i>',
+        'search': '<i class="fas fa-search text-primary"></i>',
+        'email': '<i class="fas fa-envelope text-primary"></i>',
+        'api': '<i class="fas fa-cloud text-primary"></i>'
+    };
+    
+    const icon = iconMap[type] || iconMap['info'];
+    const div = document.createElement('div');
+    div.className = `mb-2 p-2 border-start border-3 border-${type === 'error' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'primary'}`;
+    div.style.backgroundColor = type === 'error' ? '#f8d7da' : type === 'success' ? '#d1e7dd' : type === 'warning' ? '#fff3cd' : '#e7f3ff';
+    div.innerHTML = `<small class="text-muted">[${timestamp}]</small> ${icon} ${message}`;
+    
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+    
+    // Also log to console for debugging
+    console.log(`[${timestamp}] [${type.toUpperCase()}] ${message}`);
+}
+
+function clearStatusPanel() {
+    const panel = document.getElementById('statusPanel');
+    if (panel) {
+        panel.innerHTML = '<div class="text-muted"><i class="fas fa-info-circle"></i> Status messages will appear here as you process orders...<br><small>Enter an order number or upload a document to begin.</small></div>';
+    }
+}
+
+// Ensure status panel is visible
+function ensureStatusPanelVisible() {
+    const panelSection = document.getElementById('statusPanelSection');
+    if (panelSection) {
+        panelSection.style.display = 'block';
+    }
+}
+
+// Helpers
+function isValidStockProductCode(code) {
+    const raw = (code || '').toString().trim();
+    if (!raw) return false;
+    const normalized = raw.replace(/^0+/, '') || '0';
+    const prefix = normalized.slice(0, 2).padStart(2, '0');
+    const num = parseInt(prefix, 10);
+    return !Number.isNaN(num) && num >= 1 && num <= 12;
+}
+
+function isStockLine(line) {
+    if (!line) return false;
+    
+    // Check productCode first (primary identifier)
+    const code =
+        line.productCode ||
+        line.productCategoryCode ||
+        line.categoryCode ||
+        line.productCategory ||
+        '';
+    
+    // If we have a productCode, ONLY accept if it's 01-12 (strict check)
+    if (code) {
+        return isValidStockProductCode(code);
+    }
+    
+    // Only use fallback if NO productCode exists AND sale units suggest material
+    // This handles edge cases where productCode might be missing but it's clearly material
+    const units = (line.saleUnits || '').toString().toUpperCase();
+    if (!code && ['SY', 'SF', 'M2', 'M²'].includes(units)) {
+        // Additional check: exclude if description suggests service/labour
+        const desc = (line.description || line.notes || line.styleName || '').toLowerCase();
+        if (desc.includes('labour') || desc.includes('labor') || desc.includes('install') || 
+            desc.includes('service') || desc.includes('lay ') || desc.includes('remove')) {
+            return false;
+        }
+        return true;
+    }
+
+    return false;
+}
+
+// Normalize order number for comparison (remove hyphens, convert to uppercase, remove leading zeros after AZ)
+function normalizeOrderNumber(orderNum) {
+    if (!orderNum) return '';
+    // Remove hyphens, convert to uppercase
+    let normalized = orderNum.toString().toUpperCase().replace(/-/g, '');
+    // Remove leading zeros after "AZ" prefix
+    normalized = normalized.replace(/^AZ0+/, 'AZ');
+    return normalized;
+}
+
+// Compare two order numbers (handles variations like AZ003550 vs AZ003550-0001)
+function orderNumbersMatch(orderNum1, orderNum2) {
+    if (!orderNum1 || !orderNum2) return false;
+    const norm1 = normalizeOrderNumber(orderNum1);
+    const norm2 = normalizeOrderNumber(orderNum2);
+    // Check if they match exactly, or if one is a prefix of the other (base order number)
+    return norm1 === norm2 || norm1.startsWith(norm2) || norm2.startsWith(norm1);
+}
+
+// Show order mismatch error modal
+function showOrderMismatchError(enteredOrder, extractedOrder) {
+    // Hide any displayed sections
+    document.getElementById('receiveFormSection').style.display = 'none';
+    document.getElementById('searchResultsSection').style.display = 'none';
+    document.getElementById('extractedInfoSection').style.display = 'none';
+    
+    // Set modal content
+    document.getElementById('enteredOrderNumber').textContent = enteredOrder || 'N/A';
+    document.getElementById('extractedOrderNumber').textContent = extractedOrder || 'N/A';
+    
+    // Show modal (blocks interaction with page)
+    const modal = new bootstrap.Modal(document.getElementById('orderMismatchModal'), {
+        backdrop: 'static',
+        keyboard: false
+    });
+    modal.show();
+}
+
+// Reset the receive stock form
+function resetReceiveStockForm() {
+    // Hide modal
+    const modalElement = document.getElementById('orderMismatchModal');
+    const modal = bootstrap.Modal.getInstance(modalElement);
+    if (modal) {
+        modal.hide();
+    }
+    
+    // Reset form fields
+    document.getElementById('consignmentFile').value = '';
+    document.getElementById('orderNumberInput').value = '';
+    document.getElementById('uploadForm').reset();
+    
+    // Hide all sections
+    document.getElementById('extractedInfoSection').style.display = 'none';
+    document.getElementById('searchResultsSection').style.display = 'none';
+    document.getElementById('receiveFormSection').style.display = 'none';
+    
+    // Clear data
+    extractedData = null;
+    invoiceData = null;
+    searchResults = null;
+    enteredOrderNumber = null;
+    
+    // Reset button
+    const uploadBtn = document.getElementById('uploadBtn');
+    uploadBtn.disabled = false;
+    uploadBtn.innerHTML = '<i class="fas fa-play"></i> Begin Receiving';
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Upload form handler
+document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const fileInput = document.getElementById('consignmentFile');
+    const orderNumberInput = document.getElementById('orderNumberInput');
+    const file = fileInput.files[0];
+    const orderNumber = orderNumberInput.value.trim();
+    
+    // Validate: either file or order number must be provided
+    if (!file && !orderNumber) {
+        alert('Please either upload a consignment note file or enter an order number');
+        return;
+    }
+    
+    const uploadBtn = document.getElementById('uploadBtn');
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    
+    try {
+        // If order number is provided, skip AI extraction and go straight to order search
+        if (orderNumber) {
+            // Normalize order number: remove any existing AZ prefix, then add it back
+            let normalizedOrderNumber = orderNumber.trim().toUpperCase();
+            // Remove AZ prefix if present
+            normalizedOrderNumber = normalizedOrderNumber.replace(/^AZ/i, '');
+            // Validate format (numbers, optionally with suffix like -0001)
+            if (!/^[0-9]+(-[0-9]+)?$/.test(normalizedOrderNumber)) {
+                alert('Invalid order number format. Expected format: 003550 or 003550-0001');
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = '<i class="fas fa-play"></i> Begin Receiving';
+                return;
+            }
+            // Add AZ prefix
+            normalizedOrderNumber = 'AZ' + normalizedOrderNumber;
+            
+            // Store entered order number for validation (with AZ prefix)
+            enteredOrderNumber = normalizedOrderNumber;
+            
+            // Show status panel
+            showStatusPanel();
+            clearStatusPanel();
+            addStatusMessage(`Order number entered: <strong>${normalizedOrderNumber}</strong>`, 'info');
+            addStatusMessage('Starting order retrieval process...', 'loading');
+            
+            // Start background AI extraction if file is provided (for supplier reference/packing slip)
+            let backgroundExtractionPromise = Promise.resolve(null);
+            if (file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                // Run AI extraction in background (don't await)
+                backgroundExtractionPromise = fetch('/api/receive-stock/upload', {
+                    method: 'POST',
+                    body: formData
+                }).then(response => response.json())
+                  .then(data => {
+                      if (data.success) {
+                          // Check if it's a full invoice
+                          if (data.is_invoice && data.invoice_data) {
+                              invoiceData = data.invoice_data;
+                              // Validate that invoice order number matches entered order number
+                              const invoiceOrderNum = invoiceData.order_number;
+                              if (invoiceOrderNum && !orderNumbersMatch(enteredOrderNumber, invoiceOrderNum)) {
+                                  console.error('Order number mismatch with invoice:', {
+                                      entered: enteredOrderNumber,
+                                      invoice: invoiceOrderNum
+                                  });
+                                  showOrderMismatchError(enteredOrderNumber, invoiceOrderNum);
+                                  return data;
+                              }
+                              console.log('Full supplier invoice detected - will skip email search:', invoiceData);
+                          } else if (data.extracted_data) {
+                              // Validate that extracted order number matches entered order number
+                              const extractedOrderNum = data.extracted_data.order_number;
+                              if (extractedOrderNum && !orderNumbersMatch(enteredOrderNumber, extractedOrderNum)) {
+                                  // Order numbers don't match - show error modal and reset form
+                                  console.error('Order number mismatch:', {
+                                      entered: enteredOrderNumber,
+                                      extracted: extractedOrderNum
+                                  });
+                                  showOrderMismatchError(enteredOrderNumber, extractedOrderNum);
+                                  return data;
+                              }
+                              
+                              // Store extracted data for later use (supplier reference, packing slip, etc.)
+                              extractedData = data.extracted_data;
+                              console.log('Background AI extraction completed:', extractedData);
+                          }
+                      }
+                      return data;
+                  })
+                  .catch(error => {
+                      console.warn('Background AI extraction failed (non-critical):', error);
+                      return null;
+                  });
+            }
+            
+            // Immediately search for order using the normalized order number (with AZ prefix)
+            const searchPayload = {
+                order_number: normalizedOrderNumber,
+                purchase_order_number: null,
+                supplier_name: null
+            };
+            
+            addStatusMessage(`Searching RFMS for order: <strong>${normalizedOrderNumber}</strong>`, 'api');
+            addStatusMessage('Connecting to RFMS API...', 'loading');
+            
+            // Perform order search (this will show the order details immediately)
+            await performOrderSearch(searchPayload, { showExtractedOnFail: false });
+            
+            // Wait for background extraction to complete and validate
+            backgroundExtractionPromise.then((result) => {
+                if (result && result.success) {
+                    if (result.is_invoice && result.invoice_data) {
+                        // Invoice was detected - validate order number
+                        const invoiceOrderNum = result.invoice_data.order_number;
+                        if (invoiceOrderNum && !orderNumbersMatch(enteredOrderNumber, invoiceOrderNum)) {
+                            console.error('Order number mismatch detected with invoice:', {
+                                entered: enteredOrderNumber,
+                                invoice: invoiceOrderNum
+                            });
+                            showOrderMismatchError(enteredOrderNumber, invoiceOrderNum);
+                        } else {
+                            invoiceData = result.invoice_data;
+                            console.log('Full supplier invoice detected - will skip email search');
+                        }
+                    } else if (result.extracted_data) {
+                        const extractedOrderNum = result.extracted_data.order_number;
+                        if (extractedOrderNum && !orderNumbersMatch(enteredOrderNumber, extractedOrderNum)) {
+                            // This should have been caught above, but double-check
+                            console.error('Order number mismatch detected after order display:', {
+                                entered: enteredOrderNumber,
+                                extracted: extractedOrderNum
+                            });
+                            showOrderMismatchError(enteredOrderNumber, extractedOrderNum);
+                        } else {
+                            console.log('Background extraction completed - supplier reference/packing slip data available for email search');
+                        }
+                    }
+                }
+            });
+            
+        } else {
+            // No order number provided - use AI extraction as before
+            showStatusPanel();
+            clearStatusPanel();
+            addStatusMessage('No order number provided - analyzing document...', 'info');
+            addStatusMessage('Extracting information from consignment note/packing slip...', 'loading');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+            
+            const response = await fetch('/api/receive-stock/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                addStatusMessage('Document analysis complete!', 'success');
+                
+                // Check if it's a full invoice
+                if (data.is_invoice && data.invoice_data) {
+                    invoiceData = data.invoice_data;
+                    addStatusMessage('Full supplier invoice detected in document', 'success');
+                    addStatusMessage(`Invoice #: ${invoiceData.invoice_number || 'N/A'}, Supplier: ${invoiceData.supplier_name || 'N/A'}`, 'info');
+                    console.log('Full supplier invoice detected:', invoiceData);
+                    // Try to search using invoice order number
+                    if (invoiceData.order_number) {
+                        addStatusMessage(`Extracted order number from invoice: <strong>${invoiceData.order_number}</strong>`, 'info');
+                        const searchPayload = {
+                            order_number: invoiceData.order_number,
+                            purchase_order_number: invoiceData.po_number || null,
+                            supplier_name: invoiceData.supplier_name || null
+                        };
+                        await performOrderSearch(searchPayload, { showExtractedOnFail: true });
+                    } else {
+                        addStatusMessage('No order number found in invoice - manual entry required', 'warning');
+                        alert('Invoice detected but no order number found. Please enter order number manually.');
+                        displayExtractedInfo({ order_number: null, supplier_name: invoiceData.supplier_name });
+                        document.getElementById('extractedInfoSection').style.display = 'block';
+                    }
+                } else {
+                    extractedData = data.extracted_data;
+                    addStatusMessage('Consignment note/packing slip data extracted', 'success');
+                    if (extractedData.order_number) {
+                        addStatusMessage(`Extracted order number: <strong>${extractedData.order_number}</strong>`, 'info');
+                    }
+                    if (extractedData.packing_slip_number) {
+                        addStatusMessage(`Packing slip number: <strong>${extractedData.packing_slip_number}</strong>`, 'info');
+                    }
+                    if (extractedData.supplier_name) {
+                        addStatusMessage(`Supplier: <strong>${extractedData.supplier_name}</strong>`, 'info');
+                    }
+                    // Try to search immediately; only show extracted info if search fails
+                    await performOrderSearch(extractedData, { showExtractedOnFail: true });
+                }
+            } else {
+                addStatusMessage(`Error: ${data.error}`, 'error');
+                alert('Error: ' + data.error);
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to process request: ' + error.message);
+    } finally {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<i class="fas fa-play"></i> Begin Receiving';
+    }
+});
+
+// Display extracted information (only when we need manual intervention)
+function displayExtractedInfo(data) {
+    const container = document.getElementById('extractedInfo');
+    let html = '<div class="row">';
+    
+    // Show order number and purchase order number
+    // Note: They may be the same, so we'll show both if different
+    if (data.order_number) {
+        html += `<div class="col-md-6 mb-2"><strong>Order Number:</strong> <code>${data.order_number}</code></div>`;
+    }
+    if (data.purchase_order_number && data.purchase_order_number !== data.order_number) {
+        html += `<div class="col-md-6 mb-2"><strong>Purchase Order:</strong> <code>${data.purchase_order_number}</code></div>`;
+    } else if (data.purchase_order_number) {
+        html += `<div class="col-md-6 mb-2"><strong>Purchase Order:</strong> <code>${data.purchase_order_number}</code> <small class="text-muted">(same as order number)</small></div>`;
+    }
+    
+    if (data.supplier_name) {
+        html += `<div class="col-md-6 mb-2"><strong>Supplier:</strong> ${data.supplier_name}</div>`;
+    }
+    if (data.supplier_order_number) {
+        html += `<div class="col-md-6 mb-2"><strong>Supplier Order #:</strong> ${data.supplier_order_number}</div>`;
+    }
+    if (data.packing_slip_number) {
+        html += `<div class="col-md-6 mb-2"><strong>Packing Slip #:</strong> <code>${data.packing_slip_number}</code></div>`;
+    }
+    if (data.tracking_number) {
+        html += `<div class="col-md-6 mb-2"><strong>Tracking Number:</strong> ${data.tracking_number}</div>`;
+    }
+    if (data.rolls_count) {
+        html += `<div class="col-md-6 mb-2"><strong>Rolls Count:</strong> ${data.rolls_count}</div>`;
+    }
+    if (data.boxes_count) {
+        html += `<div class="col-md-6 mb-2"><strong>Boxes Count:</strong> ${data.boxes_count}</div>`;
+    }
+    if (data.total_quantity) {
+        html += `<div class="col-md-6 mb-2"><strong>Total Quantity:</strong> ${data.total_quantity}</div>`;
+    }
+    if (data.delivery_date) {
+        html += `<div class="col-md-6 mb-2"><strong>Delivery Date:</strong> ${data.delivery_date}</div>`;
+    }
+    if (data.stock_items && data.stock_items.length > 0) {
+        html += `<div class="col-12 mb-2"><strong>Stock Items:</strong> ${data.stock_items.join(', ')}</div>`;
+    }
+    if (data.notes) {
+        html += `<div class="col-12 mb-2"><strong>Notes:</strong> ${data.notes}</div>`;
+    }
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+async function performOrderSearch(payload, options = { showExtractedOnFail: false }) {
+    if (!payload) {
+        alert('Please upload and analyze a consignment note first or enter an order number');
+        return;
+    }
+    
+    // Allow direct order number search (even without extracted data)
+    if (payload.order_number && !payload.supplier_name && !payload.purchase_order_number) {
+        // This is a direct order number search - proceed
+    } else if (!payload.order_number && !payload.purchase_order_number && !payload.supplier_name) {
+        alert('Please provide order number or upload a consignment note');
+        return;
+    }
+    
+    showStatusPanel();
+    addStatusMessage('=== RFMS ORDER SEARCH ===', 'api');
+    
+    if (payload.order_number) {
+        addStatusMessage(`Searching by order number: <strong>${payload.order_number}</strong>`, 'search');
+    }
+    if (payload.purchase_order_number) {
+        addStatusMessage(`Searching by purchase order: <strong>${payload.purchase_order_number}</strong>`, 'search');
+    }
+    if (payload.supplier_name) {
+        addStatusMessage(`Filtering by supplier: <strong>${payload.supplier_name}</strong>`, 'search');
+    }
+    
+    // Check if we have packing slip number from extracted data
+    if (extractedData && extractedData.packing_slip_number) {
+        addStatusMessage(`Using packing slip number: <strong>${extractedData.packing_slip_number}</strong> for matching`, 'info');
+    }
+    
+    const searchBtn = document.getElementById('searchBtn');
+    searchBtn.disabled = true;
+    searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
+    
+    try {
+        addStatusMessage('Sending search request to RFMS API...', 'api');
+        const response = await fetch('/api/receive-stock/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        addStatusMessage('Waiting for RFMS API response...', 'loading');
+        const data = await response.json();
+        
+        if (data.success) {
+            addStatusMessage('RFMS API response received successfully', 'success');
+            searchResults = data.results;
+            // Store normalized data for display
+            if (data.normalized) {
+                searchResults.normalized = data.normalized;
+            }
+            
+            const ordersCount = searchResults.orders ? searchResults.orders.length : 0;
+            const poCount = searchResults.purchase_orders ? searchResults.purchase_orders.length : 0;
+            
+            addStatusMessage(`Found ${ordersCount} order(s) and ${poCount} purchase order(s)`, 'success');
+            
+            // If we have a direct match, auto-select first order and skip results card
+            if (searchResults.orders && searchResults.orders.length > 0) {
+                const first = searchResults.orders[0];
+                const orderNum = first.documentNumber || first.number || 'N/A';
+                const orderDate = first.orderDate || first.date || first.createdDate || first.enteredDate || '';
+                addStatusMessage(`Auto-selecting order: <strong>${orderNum}</strong>`, 'info');
+                addStatusMessage('Retrieving full order details from RFMS...', 'api');
+                await selectOrder(orderNum, orderDate || '');
+                document.getElementById('searchResultsSection').style.display = 'none';
+            } else {
+                // No match: show results for manual selection
+                addStatusMessage('No exact match found - showing search results for manual selection', 'warning');
+                displaySearchResults(searchResults);
+                document.getElementById('searchResultsSection').style.display = 'block';
+            }
+            // Hide extracted info on successful search
+            document.getElementById('extractedInfoSection').style.display = 'none';
+        } else {
+            addStatusMessage(`Search failed: ${data.error}`, 'error');
+            if (options.showExtractedOnFail) {
+                displayExtractedInfo(payload);
+                document.getElementById('extractedInfoSection').style.display = 'block';
+                alert('Could not auto-match an order. Please review the extracted data and search or enter the order manually.');
+            } else {
+                alert('Error: ' + data.error);
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to search for orders');
+    } finally {
+        searchBtn.disabled = false;
+        searchBtn.innerHTML = '<i class="fas fa-search"></i> Search for Orders';
+    }
+}
+
+// Search button handler (manual trigger)
+document.getElementById('searchBtn').addEventListener('click', async () => {
+    await performOrderSearch(extractedData, { showExtractedOnFail: true });
+});
+
+// Display search results
+function displaySearchResults(results) {
+    const container = document.getElementById('searchResults');
+    let html = '';
+    
+    // Show normalized order number info if available
+    if (results.normalized) {
+        const norm = results.normalized;
+        if (norm.order_number || norm.purchase_order_number) {
+            html += '<div class="alert alert-info mb-3">';
+            html += '<strong><i class="fas fa-info-circle"></i> Normalized Order Numbers:</strong><br>';
+            if (norm.order_number && norm.order_number.base) {
+                html += `Base: <code>${norm.order_number.base}</code>`;
+                if (norm.order_number.suffix) {
+                    html += ` | Suffix: <code>${norm.order_number.suffix}</code>`;
+                    html += ` | Full: <code>${norm.order_number.full}</code>`;
+                }
+            }
+            if (norm.purchase_order_number && norm.purchase_order_number.base) {
+                if (norm.order_number && norm.order_number.base !== norm.purchase_order_number.base) {
+                    html += '<br>PO Base: <code>' + norm.purchase_order_number.base + '</code>';
+                    if (norm.purchase_order_number.suffix) {
+                        html += ` | Suffix: <code>${norm.purchase_order_number.suffix}</code>`;
+                        html += ` | Full: <code>${norm.purchase_order_number.full}</code>`;
+                    }
+                }
+            }
+            html += '</div>';
+        }
+    }
+    
+    // Display orders
+    if (results.orders && results.orders.length > 0) {
+        html += '<h6 class="mb-3"><i class="fas fa-list"></i> Matching Orders (' + results.orders.length + ')</h6>';
+        html += '<div class="table-responsive"><table class="table table-striped table-hover">';
+        html += '<thead><tr><th>Select</th><th>Order Number</th><th>Customer</th><th>Products</th><th>Supplier</th><th>Status</th></tr></thead><tbody>';
+        
+        results.orders.forEach(order => {
+            const orderNum = order.documentNumber || order.number || order.documentNumber || 'N/A';
+            
+            // Extract customer name - try multiple possible structures
+            let customer = 'N/A';
+            if (order.soldTo) {
+                // soldTo can be an object or string
+                if (typeof order.soldTo === 'object') {
+                    const soldTo = order.soldTo;
+                    if (soldTo.businessName) {
+                        customer = soldTo.businessName;
+                    } else if (soldTo.lastName || soldTo.firstName) {
+                        customer = `${soldTo.firstName || ''} ${soldTo.lastName || ''}`.trim();
+                    } else if (soldTo.customerName) {
+                        customer = soldTo.customerName;
+                    }
+                } else {
+                    customer = order.soldTo;
+                }
+            }
+            
+            // Try other customer name fields
+            if (customer === 'N/A') {
+                if (order.customerName) {
+                    customer = order.customerName;
+                } else if (order.customerFirst || order.customerLast) {
+                    customer = `${order.customerFirst || ''} ${order.customerLast || ''}`.trim();
+                } else if (order.customer && typeof order.customer === 'object') {
+                    const cust = order.customer;
+                    if (cust.businessName) {
+                        customer = cust.businessName;
+                    } else if (cust.lastName || cust.firstName) {
+                        customer = `${cust.firstName || ''} ${cust.lastName || ''}`.trim();
+                    }
+                }
+            }
+            
+            // Extract products/quantities from lines (stock products only)
+            let productsInfo = 'N/A';
+            const lines = (order.lines || order.full_details?.lines || []).filter(l => isStockLine(l));
+            if (lines && lines.length > 0) {
+                const productList = lines.slice(0, 3).map(line => {
+                    const product = line.styleName || line.productCode || 'Product';
+                    const color = line.colorName ? ` ${line.colorName}` : '';
+                    const qty = line.quantity || 0;
+                    const units = line.saleUnits || '';
+                    return `${product}${color} (${qty} ${units})`;
+                }).join(', ');
+                productsInfo = productList;
+                if (lines.length > 3) {
+                    productsInfo += ` +${lines.length - 3} more`;
+                }
+            }
+            
+            // Supplier from order or lines
+            let supplier = order.supplierName || 'N/A';
+            if ((!supplier || supplier === 'N/A') && lines && lines.length > 0) {
+                supplier = lines[0].supplierName || lines[0].supplier || supplier;
+            }
+            const status = order.status || 'N/A';
+            
+            html += `<tr>
+                <td><button class="btn btn-sm btn-primary" onclick="selectOrder('${orderNum.replace(/'/g, "\\'")}', '${(order.orderDate || order.date || order.createdDate || order.enteredDate || '').replace(/'/g, "\\'")}')">Select</button></td>
+                <td><code>${orderNum}</code></td>
+                <td>${customer}</td>
+                <td><small>${productsInfo}</small></td>
+                <td>${supplier || 'N/A'}</td>
+                <td>${status}</td>
+            </tr>`;
+        });
+        
+        html += '</tbody></table></div>';
+    }
+    
+    // Display purchase orders
+    if (results.purchase_orders && results.purchase_orders.length > 0) {
+        html += '<h6 class="mb-3 mt-4"><i class="fas fa-box"></i> Matching Purchase Orders (Inventory) (' + results.purchase_orders.length + ')</h6>';
+        html += '<div class="table-responsive"><table class="table table-striped table-hover">';
+        html += '<thead><tr><th>Select</th><th>Order Number</th><th>PO Number</th><th>Supplier</th><th>Products</th><th>Date</th><th>Status</th></tr></thead><tbody>';
+        
+        results.purchase_orders.forEach(po => {
+            const orderNum = po.orderNumber || po.number || 'N/A';
+            const poNum = po.purchaseOrderNumber || po.poNumber || po.purchaseOrder || 'N/A';
+            const supplier = po.supplierName || po.supplier || 'N/A';
+            
+            // Extract products/quantities from purchase order lines
+            let productsInfo = 'N/A';
+            const poLines = po.lines || po.lineItems || [];
+            if (poLines && poLines.length > 0) {
+                const productList = poLines.slice(0, 3).map(line => {
+                    const product = line.styleName || line.productName || line.productCode || 'Product';
+                    const color = line.colorName ? ` ${line.colorName}` : '';
+                    const qty = line.quantity || 0;
+                    const units = line.saleUnits || '';
+                    return `${product}${color} (${qty} ${units})`;
+                }).join(', ');
+                productsInfo = productList;
+                if (poLines.length > 3) {
+                    productsInfo += ` +${poLines.length - 3} more`;
+                }
+            }
+            
+            const date = po.orderDate || po.date || '';
+            const dateDisplay = date ? date.split('T')[0] : 'N/A';
+            const status = po.status || 'N/A';
+            
+            html += `<tr>
+                <td><button class="btn btn-sm btn-primary" onclick="selectOrder('${orderNum.replace(/'/g, "\\'")}', '${date.replace(/'/g, "\\'")}')">Select</button></td>
+                <td><code>${orderNum}</code></td>
+                <td><code>${poNum}</code></td>
+                <td>${supplier}</td>
+                <td><small>${productsInfo}</small></td>
+                <td>${dateDisplay}</td>
+                <td>${status}</td>
+            </tr>`;
+        });
+        
+        html += '</tbody></table></div>';
+    }
+    
+    if (!html || (!results.orders || results.orders.length === 0) && (!results.purchase_orders || results.purchase_orders.length === 0)) {
+        html = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> No matching orders or purchase orders found. Please verify the extracted information and try searching with different variations.</div>';
+    }
+    
+    container.innerHTML = html;
+}
+
+// Select order
+async function selectOrder(orderNumber, orderDate) {
+    addStatusMessage('=== ORDER SELECTED ===', 'success');
+    addStatusMessage(`Order: <strong>${orderNumber}</strong>`, 'info');
+    addStatusMessage('Fetching complete order details from RFMS...', 'api');
+    
+    // Get order details to show line items
+    try {
+        const response = await fetch(`/api/order/${orderNumber}`);
+        addStatusMessage('RFMS API: Retrieving order lines and product information...', 'api');
+        const data = await response.json();
+        
+        if (data.success && data.order_details) {
+            const orderDetails = data.order_details;
+            addStatusMessage('Order details retrieved successfully', 'success');
+            // RFMS API returns lines in different possible structures
+            let lines = orderDetails.lines || orderDetails.lineItems || [];
+            addStatusMessage(`Order contains ${lines.length} total line(s)`, 'info');
+            
+            // Display receiving form
+            document.getElementById('selectedOrderNumber').value = orderNumber;
+            // Handle date: if orderDate is empty, 'N/A', or invalid, use today's date
+            let dateValue = '';
+            if (orderDate && orderDate !== 'N/A' && orderDate.trim() !== '') {
+                try {
+                    // Try to parse the date - handle both YYYY-MM-DD and other formats
+                    const dateStr = orderDate.split('T')[0]; // Remove time if present
+                    const dateObj = new Date(dateStr);
+                    if (!isNaN(dateObj.getTime())) {
+                        dateValue = dateStr;
+                    }
+                } catch (e) {
+                    // Invalid date, use today
+                }
+            }
+            // If no valid date, use today's date
+            if (!dateValue) {
+                dateValue = new Date().toISOString().split('T')[0];
+            }
+            document.getElementById('orderDate').value = dateValue;
+            
+            const lineContainer = document.getElementById('lineNumbersContainer');
+            let lineHtml = '';
+            
+            // Filter lines to only show stock lines (valid categories) FIRST
+            console.log('All lines before filtering:', lines.length, lines);
+            addStatusMessage('Filtering lines to show only stock products (codes 01-12)...', 'info');
+            const stockLines = lines.filter((line) => {
+                const isStock = isStockLine(line);
+                if (!isStock) {
+                    console.log('Filtered out line:', line.lineNumber, line.productCode, line.styleName, line.description);
+                }
+                return isStock;
+            });
+            console.log('Filtered lines (stock only):', stockLines.length, stockLines);
+            addStatusMessage(`Found ${stockLines.length} stock product line(s) to receive`, 'success');
+            
+            if (stockLines.length > 0) {
+                // Get order number and customer name
+                const orderNum = orderDetails.number || orderDetails.documentNumber || orderNumber;
+                let customerName = 'N/A';
+                if (orderDetails.soldTo) {
+                    if (typeof orderDetails.soldTo === 'object') {
+                        customerName = orderDetails.soldTo.businessName || 
+                                     `${orderDetails.soldTo.firstName || ''} ${orderDetails.soldTo.lastName || ''}`.trim() ||
+                                     orderDetails.soldTo.customerName || 'N/A';
+                    } else {
+                        customerName = orderDetails.soldTo;
+                    }
+                }
+                
+                // Create header with order number and customer
+                lineHtml = `<div class="mb-3"><strong>Order Number:</strong> <code>${orderNum}</code> <strong class="ms-3">Customer:</strong> ${customerName}</div>`;
+                
+                // Create a table for better product display
+                lineHtml += '<div class="table-responsive"><table class="table table-bordered table-hover">';
+                lineHtml += '<thead class="table-light"><tr>';
+                lineHtml += '<th style="width: 40px;"><input type="checkbox" id="selectAllLines" checked></th>';
+                lineHtml += '<th style="width: 50px;">Line</th>';
+                lineHtml += '<th style="width: 80px;">Product Code</th>';
+                lineHtml += '<th style="min-width: 200px; width: 30%;">Style / Colour / Species</th>';
+                lineHtml += '<th style="width: 90px;">No. Boxes</th>';
+                lineHtml += '<th style="width: 100px;">Units / Mtrs</th>';
+                lineHtml += '<th style="width: 70px;" id="measurementHeader">UNIT</th>';
+                lineHtml += '<th style="width: 100px;">Type</th>';
+                lineHtml += '</tr></thead><tbody>';
+                
+                let hasRollStock = false;
+                let hasItems = false;
+                
+                // First pass: detect product types
+                stockLines.forEach((line) => {
+                    const productCode = (line.productCode || '').toString().trim();
+                    const isRoll = productCode === '01' || productCode === '1' || productCode.startsWith('01');
+                    if (isRoll) hasRollStock = true;
+                    else hasItems = true;
+                });
+                
+                // Header is already set to "UNIT"
+                
+                // Product category mapping
+                const productCategories = {
+                    '01': 'CARPET', '1': 'CARPET',
+                    '02': 'VINYL', '2': 'VINYL',
+                    '03': 'HYBRID', '3': 'HYBRID',
+                    '04': 'TIMBER', '4': 'TIMBER',
+                    '05': 'LAMINATE', '5': 'LAMINATE',
+                    '06': 'VINYL PLANKS', '6': 'VINYL PLANKS',
+                    '07': 'VINYL TILES', '7': 'VINYL TILES',
+                    '08': 'CARPET TILES', '8': 'CARPET TILES',
+                    '09': 'UNDERLAYS', '9': 'UNDERLAYS',
+                    '10': 'NOSINGS & TRIMS',
+                    '11': 'ACCESSORIES',
+                    '12': 'COMMERCIAL VINYL'
+                };
+                
+                const getCategoryDescription = (code) => {
+                    if (!code) return 'Unknown';
+                    const normalized = code.toString().trim();
+                    return productCategories[normalized] || 
+                           productCategories['0' + normalized] || 
+                           productCategories[normalized.replace(/^0+/, '')] || 
+                           'Unknown';
+                };
+                
+                stockLines.forEach((line, index) => {
+                    const lineNum = line.lineNumber || (index + 1);
+                    const productCode = line.productCode || 'N/A';
+                    const styleName = line.styleName || '';
+                    const colorName = line.colorName || '';
+                    const description = line.description || line.notes || '';
+                    // Preserve quantity as-is from RFMS API - don't convert to number if it's already a string with precision
+                    const quantity = line.quantity !== undefined && line.quantity !== null ? line.quantity : 0;
+                    const saleUnits = line.saleUnits || 'SF';
+                    
+                    // Get category description
+                    const categoryDesc = getCategoryDescription(productCode);
+                    
+                    // Detect if this is Roll Stock (carpet) - product code "01" or "1"
+                    const normalizedCode = productCode.toString().trim();
+                    const isRollStock = normalizedCode === '01' || normalizedCode === '1' || 
+                                      normalizedCode.startsWith('01') || normalizedCode.startsWith('1');
+                    
+                    // Detect if this is a scotia/trim/accessory
+                    // Category codes 10 (NOSINGS & TRIMS), 11 (ACCESSORIES)
+                    // Or product codes starting with 8x (but not 08 which is CARPET TILES)
+                    // Or descriptions containing scotia/trim/accessory
+                    const isScotia = (normalizedCode === '10' || normalizedCode === '11') ||
+                                    (normalizedCode.startsWith('8') && normalizedCode !== '08' && normalizedCode !== '8') ||
+                                    /scotia|trim|accessory|nosing/i.test(description) || 
+                                    /scotia|trim|accessory|nosing/i.test(styleName) ||
+                                    categoryDesc.includes('TRIM') || categoryDesc.includes('ACCESSORY');
+                    
+                    // Determine product type badge (concise)
+                    let itemType = '';
+                    if (isRollStock) {
+                        itemType = `<span class="badge bg-info" title="${categoryDesc}">Roll stock</span>`;
+                    } else if (isScotia) {
+                        itemType = `<span class="badge bg-warning" title="${categoryDesc}">Scotia/Trim</span>`;
+                    } else {
+                        itemType = `<span class="badge bg-primary" title="${categoryDesc}">Item</span>`;
+                    }
+                    
+                    // Add category description to product code display
+                    const productCodeDisplay = `<code>${productCode}</code><br><small class="text-muted">${categoryDesc}</small>`;
+                    
+                    // Determine row class
+                    let rowClass = '';
+                    if (isRollStock) {
+                        rowClass = 'table-info'; // Light blue for roll stock
+                    } else if (isScotia) {
+                        rowClass = 'table-warning'; // Yellow for scotia/trim
+                    }
+                    
+                    // Store line data in data attributes for later retrieval (including unitPrice for payables)
+                    const unitPrice = line.unitPrice || line.unitCost || 0;
+                    const supplierName = line.supplierName || '';
+                    const lineDataJson = JSON.stringify({
+                        lineNumber: lineNum,
+                        productCode: productCode,
+                        styleName: styleName,
+                        colorName: colorName,
+                        quantity: quantity,
+                        saleUnits: saleUnits,
+                        unitPrice: unitPrice,
+                        supplierName: supplierName,
+                        total: line.total || 0,
+                        productId: line.productId || 0,
+                        colorId: line.colorId || 0
+                    });
+                    
+                    lineHtml += `<tr data-line-number="${lineNum}" data-is-roll-stock="${isRollStock}" data-category="${categoryDesc}" data-line-data='${lineDataJson.replace(/'/g, "&#39;")}' class="${rowClass}">`;
+                    lineHtml += `<td><input class="form-check-input line-checkbox" type="checkbox" value="${lineNum}" id="line${lineNum}" checked></td>`;
+                    lineHtml += `<td><strong>${lineNum}</strong></td>`;
+                    lineHtml += `<td>${productCodeDisplay}</td>`;
+                    const styleColourText = styleName ? styleName + (colorName ? ' / ' + colorName : '') : 'N/A';
+                    lineHtml += `<td style="min-width: 200px; max-width: 30%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${styleColourText}">${styleColourText}</td>`;
+                    
+                    // Determine if this is an M2 product (for "No. Boxes" column)
+                    const isM2Product = saleUnits === 'M2' || saleUnits === 'M²' || saleUnits === 'SF' || saleUnits === 'SY';
+                    const isLMProduct = saleUnits === 'LM';
+                    const isProductCode9 = normalizedCode === '09' || normalizedCode === '9';
+                    
+                    // "No. Boxes" column - only for M2 products
+                    let noBoxesValue = '';
+                    let noBoxesInput = '';
+                    if (isM2Product) {
+                        // For M2 products, use boxes_count from con note or calculate from quantity
+                        if (extractedData && extractedData.boxes_count) {
+                            noBoxesValue = extractedData.boxes_count.toString();
+                        } else if (quantity > 0) {
+                            // If no boxes_count from con note, use quantity (which may be packs)
+                            noBoxesValue = quantity.toString();
+                        }
+                        noBoxesInput = `<input type="number" class="form-control form-control-sm boxes-input" id="boxes${lineNum}" min="0" step="1" placeholder="0" value="${noBoxesValue}" title="Number of boxes/packs" style="width: 80px;">`;
+                    } else {
+                        // Not an M2 product - hide or disable the input
+                        noBoxesInput = '<input type="number" class="form-control form-control-sm" disabled style="width: 80px; background-color: #f5f5f5;" placeholder="N/A">';
+                    }
+                    
+                    // "Units / Mtrs" column - for all products
+                    // Preserve full precision from RFMS API (up to 4 decimal places) - don't round
+                    let unitsMtrsValue = '';
+                    // Convert quantity to number for comparison, but preserve precision when displaying
+                    const quantityNum = typeof quantity === 'number' ? quantity : parseFloat(quantity) || 0;
+                    
+                    if (isLMProduct) {
+                        // For LM products: use quantity from order (lineal metres) - preserve full precision
+                        unitsMtrsValue = quantityNum > 0 ? String(quantityNum) : '';
+                    } else if (isM2Product) {
+                        // For M2 products: show order total meterage (quantity from order) - preserve full precision
+                        unitsMtrsValue = quantityNum > 0 ? String(quantityNum) : '';
+                    } else if (isProductCode9) {
+                        // Product code 9 (underlay): show qty (sold in LM) - preserve full precision
+                        unitsMtrsValue = quantityNum > 0 ? String(quantityNum) : '';
+                    } else {
+                        // Trims and other items: show quantity or lineal metres - preserve full precision
+                        unitsMtrsValue = quantityNum > 0 ? String(quantityNum) : '';
+                    }
+                    
+                    // Override with extracted data if available (for LM products, use quantity from con note)
+                    // Preserve full precision from extracted data - use original string value if available
+                    if (extractedData && extractedData.quantity && (isLMProduct || isProductCode9)) {
+                        const extractedQty = parseFloat(extractedData.quantity);
+                        if (!isNaN(extractedQty) && extractedQty > 0) {
+                            // Preserve original precision from extracted data - use original string to avoid rounding
+                            unitsMtrsValue = typeof extractedData.quantity === 'string' ? extractedData.quantity : String(extractedQty);
+                        }
+                    }
+                    
+                    // UNIT column shows saleUnits from RFMS
+                    const unitValue = saleUnits || 'N/A';
+                    
+                    lineHtml += `<td>${noBoxesInput}</td>`;
+                    lineHtml += `<td><input type="number" class="form-control form-control-sm units-mtrs-input" id="unitsMtrs${lineNum}" min="0" step="0.0001" placeholder="0" value="${unitsMtrsValue}" title="Units / Metres (4 decimal places)" style="width: 100px;"></td>`;
+                    lineHtml += `<td><input type="text" class="form-control form-control-sm" id="unit${lineNum}" value="${unitValue}" readonly style="width: 100px;" title="Unit of measurement"></td>`;
+                    lineHtml += `<td>${itemType}</td>`;
+                    lineHtml += '</tr>';
+                });
+                
+                lineHtml += '</tbody></table></div>';
+                
+                // Add select all functionality
+                lineHtml += '<div class="mt-2"><button type="button" class="btn btn-sm btn-outline-secondary" id="selectAllBtn">Select All</button> ';
+                lineHtml += '<button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllBtn">Deselect All</button></div>';
+            } else {
+                const originalCount = (orderDetails.lines || orderDetails.lineItems || []).length;
+                if (originalCount > 0) {
+                    lineHtml = `<div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        No stock product lines found (filtered ${originalCount} total lines). 
+                        Only product codes 01-12 (stock materials) are shown. 
+                        Service/labour lines are excluded.
+                    </div>`;
+                } else {
+                    lineHtml = '<div class="alert alert-info">No line items found in this order. You may need to manually enter line numbers.</div>';
+                }
+            }
+            
+            lineContainer.innerHTML = lineHtml;
+            addStatusMessage('Receiving form displayed - ready for stock input', 'success');
+            addStatusMessage('=== READY TO RECEIVE STOCK ===', 'success');
+            
+            // Function to enable/disable inputs based on checkbox state
+            function toggleLineInputs(lineNum, isChecked) {
+                const boxesInput = document.getElementById(`boxes${lineNum}`);
+                const unitsMtrsInput = document.getElementById(`unitsMtrs${lineNum}`);
+                const row = document.querySelector(`tr[data-line-number="${lineNum}"]`);
+                
+                if (boxesInput) {
+                    boxesInput.disabled = !isChecked;
+                    if (!isChecked) {
+                        boxesInput.value = '';
+                        boxesInput.removeAttribute('required');
+                    }
+                }
+                if (unitsMtrsInput) {
+                    unitsMtrsInput.disabled = !isChecked;
+                    if (!isChecked) {
+                        unitsMtrsInput.value = '';
+                        unitsMtrsInput.removeAttribute('required');
+                    }
+                }
+                if (row) {
+                    if (isChecked) {
+                        row.classList.remove('table-secondary');
+                        row.style.opacity = '1';
+                    } else {
+                        row.classList.add('table-secondary');
+                        row.style.opacity = '0.5';
+                    }
+                }
+            }
+            
+            // Add event listeners for select all/deselect all
+            const selectAllCheckbox = document.getElementById('selectAllLines');
+            const selectAllBtn = document.getElementById('selectAllBtn');
+            const deselectAllBtn = document.getElementById('deselectAllBtn');
+            
+            // Add change listeners to all checkboxes to toggle inputs
+            const allCheckboxes = document.querySelectorAll('.line-checkbox');
+            allCheckboxes.forEach(checkbox => {
+                const lineNum = parseInt(checkbox.value);
+                // Set initial state
+                toggleLineInputs(lineNum, checkbox.checked);
+                
+                // Add change listener
+                checkbox.addEventListener('change', function() {
+                    toggleLineInputs(lineNum, this.checked);
+                });
+            });
+            
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', function() {
+                    const checkboxes = document.querySelectorAll('.line-checkbox');
+                    checkboxes.forEach(cb => {
+                        cb.checked = this.checked;
+                        const lineNum = parseInt(cb.value);
+                        toggleLineInputs(lineNum, this.checked);
+                    });
+                });
+            }
+            
+            if (selectAllBtn) {
+                selectAllBtn.addEventListener('click', function() {
+                    const checkboxes = document.querySelectorAll('.line-checkbox');
+                    checkboxes.forEach(cb => {
+                        cb.checked = true;
+                        const lineNum = parseInt(cb.value);
+                        toggleLineInputs(lineNum, true);
+                    });
+                    if (selectAllCheckbox) selectAllCheckbox.checked = true;
+                });
+            }
+            
+            if (deselectAllBtn) {
+                deselectAllBtn.addEventListener('click', function() {
+                    const checkboxes = document.querySelectorAll('.line-checkbox');
+                    checkboxes.forEach(cb => {
+                        cb.checked = false;
+                        const lineNum = parseInt(cb.value);
+                        toggleLineInputs(lineNum, false);
+                    });
+                    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+                });
+            }
+            document.getElementById('receiveFormSection').style.display = 'block';
+            document.getElementById('receiveFormSection').scrollIntoView({ behavior: 'smooth' });
+        } else {
+            // If we can't get order details, still show the form
+            document.getElementById('selectedOrderNumber').value = orderNumber;
+            // Handle date validation same as above
+            let dateValue = '';
+            if (orderDate && orderDate !== 'N/A' && orderDate.trim() !== '') {
+                try {
+                    const dateStr = orderDate.split('T')[0];
+                    const dateObj = new Date(dateStr);
+                    if (!isNaN(dateObj.getTime())) {
+                        dateValue = dateStr;
+                    }
+                } catch (e) {
+                    // Invalid date, use today
+                }
+            }
+            if (!dateValue) {
+                dateValue = new Date().toISOString().split('T')[0];
+            }
+            document.getElementById('orderDate').value = dateValue;
+            // Show a simplified form if we can't load line items
+            const lineContainer = document.getElementById('lineNumbersContainer');
+            lineContainer.innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> Could not load line items from order. You may need to manually enter line numbers, boxes, and square meters.</div>';
+            document.getElementById('receiveFormSection').style.display = 'block';
+            document.getElementById('receiveFormSection').scrollIntoView({ behavior: 'smooth' });
+        }
+    } catch (error) {
+        console.error('Error getting order details:', error);
+        // Still show the form
+        document.getElementById('selectedOrderNumber').value = orderNumber;
+        // Handle date validation same as above
+        let dateValue = '';
+        if (orderDate && orderDate !== 'N/A' && orderDate.trim() !== '') {
+            try {
+                const dateStr = orderDate.split('T')[0];
+                const dateObj = new Date(dateStr);
+                if (!isNaN(dateObj.getTime())) {
+                    dateValue = dateStr;
+                }
+            } catch (e) {
+                // Invalid date, use today
+            }
+        }
+        if (!dateValue) {
+            dateValue = new Date().toISOString().split('T')[0];
+        }
+        document.getElementById('orderDate').value = dateValue;
+        document.getElementById('receiveFormSection').style.display = 'block';
+    }
+}
+
+// Receive form handler
+document.getElementById('receiveForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const orderNumber = document.getElementById('selectedOrderNumber').value;
+    const orderDate = document.getElementById('orderDate').value;
+    
+    // Get checked lines with their boxes and square meters
+    // IMPORTANT: Only process CHECKED checkboxes - ignore unchecked lines
+    const checkedLineInputs = Array.from(document.querySelectorAll('#lineNumbersContainer input[type="checkbox"]:checked'));
+    const lineData = [];
+    
+    if (checkedLineInputs.length === 0) {
+        alert('Please select at least one line number to receive');
+        return;
+    }
+    
+    checkedLineInputs.forEach(checkbox => {
+        // Double-check that checkbox is actually checked
+        if (!checkbox.checked) {
+            console.warn(`Skipping unchecked line ${checkbox.value}`);
+            return;
+        }
+        
+        const lineNum = parseInt(checkbox.value);
+        const boxesInput = document.getElementById(`boxes${lineNum}`);
+        const unitsMtrsInput = document.getElementById(`unitsMtrs${lineNum}`);
+        const row = checkbox.closest('tr');
+        const isRollStock = row ? row.getAttribute('data-is-roll-stock') === 'true' : false;
+        
+        // Skip if inputs are disabled (line is not selected)
+        if (boxesInput && boxesInput.disabled) {
+            console.warn(`Skipping line ${lineNum} - inputs are disabled`);
+            return;
+        }
+        if (unitsMtrsInput && unitsMtrsInput.disabled) {
+            console.warn(`Skipping line ${lineNum} - inputs are disabled`);
+            return;
+        }
+        
+        // Retrieve stored line data (including unitPrice for payables)
+        let storedLineData = {};
+        try {
+            const lineDataAttr = row ? row.getAttribute('data-line-data') : null;
+            if (lineDataAttr) {
+                storedLineData = JSON.parse(lineDataAttr.replace(/&#39;/g, "'"));
+            }
+        } catch (e) {
+            console.warn('Failed to parse line data:', e);
+        }
+        
+        // Only get values if inputs are enabled (line is selected)
+        // Preserve full precision (up to 4 decimal places) - don't round
+        const boxes = (boxesInput && !boxesInput.disabled) ? (parseFloat(boxesInput.value) || 0) : 0;
+        // Parse units_mtrs but preserve full precision - parseFloat handles up to reasonable precision
+        const unitsMtrsRaw = (unitsMtrsInput && !unitsMtrsInput.disabled) ? unitsMtrsInput.value : '0';
+        const unitsMtrs = parseFloat(unitsMtrsRaw) || 0;
+        
+        // Get product info from stored data or row
+        const productCode = storedLineData.productCode || (row ? row.cells[2].textContent.trim() : '');
+        const styleColor = row ? row.cells[3].textContent.trim() : '';
+        const isScotia = row ? row.classList.contains('table-warning') : false;
+        
+        // Determine if this is M2 or LM product for proper handling
+        const saleUnits = storedLineData.saleUnits || '';
+        const isM2Product = saleUnits === 'M2' || saleUnits === 'M²' || saleUnits === 'SF' || saleUnits === 'SY';
+        const isLMProduct = saleUnits === 'LM';
+        
+        lineData.push({
+            line_number: lineNum,
+            boxes: boxes,
+            units_mtrs: unitsMtrs,
+            product_code: productCode,
+            style_name: storedLineData.styleName || '',
+            color_name: storedLineData.colorName || '',
+            style_color: styleColor,
+            is_scotia_trim: isScotia,
+            is_roll_stock: isRollStock,
+            // Store pricing and supplier data for payables creation
+            unit_price: storedLineData.unitPrice || 0,
+            quantity: storedLineData.quantity || 0,
+            sale_units: saleUnits,
+            supplier_name: storedLineData.supplierName || '',
+            total: storedLineData.total || 0,
+            product_id: storedLineData.productId || 0,
+            color_id: storedLineData.colorId || 0,
+            // For backward compatibility, map units_mtrs to square_meters or linear_meters
+            square_meters: isM2Product ? unitsMtrs : 0,
+            linear_meters: isLMProduct ? unitsMtrs : 0
+        });
+    });
+    
+    if (lineData.length === 0) {
+        alert('Please select at least one line number to receive');
+        return;
+    }
+    
+    // Validate that boxes (for M2) or units/mtrs are entered
+    const hasData = lineData.some(line => line.boxes > 0 || line.units_mtrs > 0);
+    if (!hasData) {
+        const confirm = window.confirm('No boxes or units/metres entered. Continue with receiving anyway?');
+        if (!confirm) {
+            return;
+        }
+    }
+    
+    const receiveBtn = document.getElementById('receiveBtn');
+    receiveBtn.disabled = true;
+    receiveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Receiving...';
+    
+    showStatusPanel();
+    addStatusMessage('=== RECEIVING STOCK ===', 'info');
+    addStatusMessage(`Order: <strong>${orderNumber}</strong>`, 'info');
+    addStatusMessage(`Receiving ${lineData.length} line(s)`, 'info');
+    addStatusMessage('Sending receive request to RFMS API...', 'api');
+    
+    try {
+        const response = await fetch('/api/receive-stock/receive', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                order_number: orderNumber,
+                order_date: orderDate,
+                line_numbers: lineData.map(l => l.line_number),
+                line_data: lineData,  // Include detailed line data
+                packing_slip_number: extractedData ? extractedData.packing_slip_number : null,
+                invoice_data: invoiceData,  // Full invoice data if invoice was uploaded
+                search_email_for_invoice: !invoiceData  // Skip email search if we have invoice data
+            })
+        });
+        
+        addStatusMessage('RFMS API: Processing stock receive...', 'loading');
+        const data = await response.json();
+        
+        if (data.success) {
+            addStatusMessage('Stock successfully received in RFMS!', 'success');
+            
+            // Show success message with details
+            const scotiaLines = lineData.filter(l => l.is_scotia_trim);
+            const rollStockLines = lineData.filter(l => l.is_roll_stock);
+            const itemLines = lineData.filter(l => !l.is_roll_stock);
+            
+            addStatusMessage(`Lines received: ${lineData.length}`, 'success');
+            if (rollStockLines.length > 0) {
+                const totalRolls = rollStockLines.reduce((sum, l) => sum + l.boxes, 0);
+                const totalUnits = rollStockLines.reduce((sum, l) => sum + (l.units_mtrs || 0), 0);
+                addStatusMessage(`Roll Stock: ${rollStockLines.length} line(s), ${totalRolls} rolls, ${totalUnits.toFixed(2)} units/metres`, 'success');
+            }
+            if (itemLines.length > 0) {
+                const totalBoxes = itemLines.reduce((sum, l) => sum + l.boxes, 0);
+                const totalUnits = itemLines.reduce((sum, l) => sum + (l.units_mtrs || 0), 0);
+                addStatusMessage(`Items: ${itemLines.length} line(s), ${totalBoxes} boxes, ${totalUnits.toFixed(2)} units/metres`, 'success');
+            }
+            if (scotiaLines.length > 0) {
+                addStatusMessage(`Scotia/Trim lines: ${scotiaLines.length} (may require dual line assessment)`, 'warning');
+            }
+            
+            // Show invoice search process
+            if (invoiceData) {
+                addStatusMessage('=== INVOICE PROCESSING ===', 'email');
+                addStatusMessage('Using uploaded invoice - skipping email search', 'info');
+            } else {
+                addStatusMessage('=== SEARCHING FOR SUPPLIER INVOICE ===', 'email');
+                addStatusMessage('Searching email account (accounts@atozflooringsolutions.com.au)...', 'email');
+                addStatusMessage('Checking inbox for invoices from last 60 days...', 'loading');
+                if (extractedData && extractedData.supplier_name) {
+                    addStatusMessage(`Filtering by supplier: <strong>${extractedData.supplier_name}</strong>`, 'email');
+                }
+                if (extractedData && extractedData.packing_slip_number) {
+                    addStatusMessage(`Matching by packing slip: <strong>${extractedData.packing_slip_number}</strong>`, 'email');
+                }
+                addStatusMessage('Checking supplier-specific folders...', 'loading');
+                addStatusMessage('Downloading and analyzing PDF attachments...', 'loading');
+            }
+            
+            let message = `Successfully received inventory for order ${orderNumber}\n\n`;
+            message += `Lines received: ${lineData.length}\n`;
+            if (rollStockLines.length > 0) {
+                message += `Roll Stock (carpet): ${rollStockLines.length} line(s)\n`;
+                message += `Total rolls: ${rollStockLines.reduce((sum, l) => sum + l.boxes, 0)}\n`;
+                message += `Total units/metres: ${rollStockLines.reduce((sum, l) => sum + (l.units_mtrs || 0), 0).toFixed(2)}\n`;
+            }
+            if (itemLines.length > 0) {
+                message += `Items: ${itemLines.length} line(s)\n`;
+                const totalBoxes = itemLines.reduce((sum, l) => sum + l.boxes, 0);
+                if (totalBoxes > 0) {
+                    message += `Total boxes: ${totalBoxes}\n`;
+                }
+                message += `Total units/metres: ${itemLines.reduce((sum, l) => sum + (l.units_mtrs || 0), 0).toFixed(2)}\n`;
+            }
+            if (scotiaLines.length > 0) {
+                message += `\nScotia/Trim lines: ${scotiaLines.length} (may require dual line assessment)`;
+            }
+            
+            // Show invoice information if found
+            if (data.invoice_info) {
+                const inv = data.invoice_info;
+                addStatusMessage('Supplier invoice found in email!', 'success');
+                addStatusMessage(`Invoice #: ${inv.invoice_number || 'N/A'}`, 'info');
+                addStatusMessage(`Supplier: ${inv.supplier_name || 'N/A'}`, 'info');
+                addStatusMessage(`Invoice Date: ${inv.invoice_date || 'N/A'}`, 'info');
+                addStatusMessage(`Total: $${(inv.total || 0).toFixed(2)}`, 'info');
+                
+                if (inv.freight > 0 || inv.baling_handling > 0 || inv.supplier_discount > 0) {
+                    addStatusMessage('Charges found:', 'info');
+                    if (inv.freight > 0) {
+                        addStatusMessage(`  • Freight: $${inv.freight.toFixed(2)}`, 'info');
+                    }
+                    if (inv.baling_handling > 0) {
+                        addStatusMessage(`  • Baling/Handling: $${inv.baling_handling.toFixed(2)}`, 'info');
+                    }
+                    if (inv.supplier_discount > 0) {
+                        addStatusMessage(`  • Discount: $${inv.supplier_discount.toFixed(2)}`, 'info');
+                    }
+                }
+                
+                message += `\n\n📄 Supplier Invoice Matched:\n`;
+                message += `Invoice #: ${inv.invoice_number || 'N/A'}\n`;
+                message += `Supplier: ${inv.supplier_name || 'N/A'}\n`;
+                message += `Invoice Date: ${inv.invoice_date || 'N/A'}\n`;
+                message += `Total: $${(inv.total || 0).toFixed(2)}\n`;
+                message += `\nCharges Found:\n`;
+                if (inv.freight > 0) {
+                    message += `  • Freight: $${inv.freight.toFixed(2)}\n`;
+                }
+                if (inv.baling_handling > 0) {
+                    message += `  • Baling/Handling: $${inv.baling_handling.toFixed(2)}\n`;
+                }
+                if (inv.supplier_discount > 0) {
+                    message += `  • Discount: $${inv.supplier_discount.toFixed(2)}\n`;
+                }
+                if (inv.tax > 0) {
+                    message += `  • Tax: $${inv.tax.toFixed(2)}\n`;
+                }
+                if (data.ap_record_created) {
+                    addStatusMessage('Accounts Payable record created successfully!', 'success');
+                    message += `\n✅ Accounts Payable record created successfully`;
+                }
+            } else if (!invoiceData) {
+                addStatusMessage('No matching invoice found in email account', 'warning');
+                addStatusMessage('Notification sent to accounts team', 'info');
+            }
+            
+            // Show notification message if present (e.g., no invoice found)
+            if (data.notification_message) {
+                addStatusMessage(`Note: ${data.notification_message}`, 'warning');
+                message += `\n\n${data.notification_message}`;
+            }
+            
+            addStatusMessage('=== PROCESS COMPLETE ===', 'success');
+            
+            alert(message);
+            
+            // Reset form
+            document.getElementById('receiveForm').reset();
+            document.getElementById('receiveFormSection').style.display = 'none';
+            document.getElementById('searchResultsSection').style.display = 'none';
+            document.getElementById('extractedInfoSection').style.display = 'none';
+            extractedData = null;
+            searchResults = null;
+        } else {
+            addStatusMessage(`Error: ${data.error}`, 'error');
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        addStatusMessage(`Failed to receive inventory: ${error.message}`, 'error');
+        alert('Failed to receive inventory');
+    } finally {
+        receiveBtn.disabled = false;
+        receiveBtn.innerHTML = '<i class="fas fa-check"></i> Receive Stock';
+    }
+});
+</script>
+{% endblock %}
+

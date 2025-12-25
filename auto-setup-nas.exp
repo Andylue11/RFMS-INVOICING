@@ -1,0 +1,53 @@
+#!/usr/bin/env expect
+# Auto-login script for Synology NAS
+
+set timeout 300
+set NAS_USER "atoz"
+set NAS_IP "192.168.0.201"
+set NAS_PASSWORD "SimVek22\$\$22"
+
+spawn scp setup-now.sh SETUP-GUIDE.md ${NAS_USER}@${NAS_IP}:/volume1/docker/pdf-extractor/
+
+expect {
+    "password:" {
+        send "${NAS_PASSWORD}\r"
+        exp_continue
+    }
+    eof
+}
+
+spawn ssh ${NAS_USER}@${NAS_IP}
+
+expect {
+    "password:" {
+        send "${NAS_PASSWORD}\r"
+    }
+}
+
+expect "$ "
+
+# Now run the setup commands
+send "cd /volume1/docker/pdf-extractor\r"
+expect "$ "
+
+send "ls -la\r"
+expect "$ "
+
+send "chmod +x setup-now.sh\r"
+expect "$ "
+
+send "bash setup-now.sh\r"
+expect {
+    "Setup Complete!" {
+        puts "\n✅ Setup completed successfully!"
+    }
+    "$ " {
+        puts "\n✅ Setup completed!"
+    }
+    timeout {
+        puts "\n⚠️ Setup may still be running..."
+    }
+}
+
+send "exit\r"
+expect eof

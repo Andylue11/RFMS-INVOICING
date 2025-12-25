@@ -1,0 +1,33 @@
+==========================================
+UPDATE WITH SUDO (if Docker needs sudo)
+==========================================
+
+On Synology, Docker might need sudo or be in a different location.
+
+Try these commands:
+
+1. Find Docker:
+   ssh atoz@AtozServer "which docker || sudo which docker || find /usr -name docker 2>/dev/null"
+
+2. Update with sudo (if needed):
+   ssh atoz@AtozServer "cd /volume1/docker/rfms-uploader; sudo docker compose down; sudo docker compose build --no-cache; sudo docker compose up -d"
+
+3. Or use full paths:
+   ssh atoz@AtozServer "cd /volume1/docker/rfms-uploader; /usr/local/bin/docker compose down; /usr/local/bin/docker compose build --no-cache; /usr/local/bin/docker compose up -d"
+
+4. Check if user is in docker group:
+   ssh atoz@AtozServer "groups | grep docker"
+
+==========================================
+SYNOLOGY DOCKER GUI METHOD
+==========================================
+
+If SSH commands don't work, you can also:
+1. Log into Synology DSM web interface
+2. Open Docker package
+3. Stop the rfms-uploader container
+4. Use File Station to update files in /volume1/docker/rfms-uploader
+5. Restart the container from Docker GUI
+
+==========================================
+

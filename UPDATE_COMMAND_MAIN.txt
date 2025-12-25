@@ -1,0 +1,40 @@
+==========================================
+RFMS-Uploader Office Server Update
+Updated for MAIN branch
+==========================================
+
+Exact path: /volume1/docker/rfms-uploader
+
+Run this command from your local machine:
+
+ssh atoz@AtozServer 'cd /volume1/docker/rfms-uploader && git remote set-url origin git@github.com:Andylue11/RFMS-UPLOADER.git && git pull origin main && docker-compose down && docker-compose build --no-cache && docker-compose up -d'
+
+Or step by step:
+
+1. SSH into server:
+   ssh atoz@AtozServer
+
+2. Navigate to directory:
+   cd /volume1/docker/rfms-uploader
+
+3. Update git remote to SSH (if not already):
+   git remote set-url origin git@github.com:Andylue11/RFMS-UPLOADER.git
+
+4. Pull latest code from main:
+   git pull origin main
+
+5. Stop container:
+   docker-compose down
+
+6. Rebuild container:
+   docker-compose build --no-cache
+
+7. Start container:
+   docker-compose up -d
+
+8. Check status:
+   docker-compose ps
+   docker-compose logs --tail=50
+
+==========================================
+

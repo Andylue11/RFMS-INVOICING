@@ -1,0 +1,1247 @@
+{% extends "base.html" %}
+
+{% block title %}Preview - {{ pdf_data.filename }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="breadcrumb-item active">Preview & Edit</li>
+            </ol>
+        </nav>
+        <h1 class="display-4 mb-2">{% if pdf_data.processed %}Job Details{% else %}Review & Edit Extracted Data{% endif %}</h1>
+        <p class="text-muted">
+            Document Type: <span class="badge bg-secondary">{{ pdf_data.extracted_data.get('document_type', 'purchase_order').replace('_', ' ').title() }}</span>
+        </p>
+    </div>
+</div>
+
+<div id="statusAlert" class="alert d-none" role="alert"></div>
+
+<div class="row">
+    <!-- Left Column: Editable Form -->
+    <div class="col-md-8">
+        <form id="rfmsForm">
+            <input type="hidden" name="pdf_id" value="{{ pdf_data.id }}">
+            <input type="hidden" id="documentType" name="document_type" value="{{ pdf_data.extracted_data.get('document_type', 'purchase_order') }}">
+            
+            <!-- Main Info Section -->
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-file-alt"></i> Main Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="poNumber" class="form-label"><strong>PO/Quote Number *</strong></label>
+                            <input type="text" class="form-control" id="poNumber" name="po_number" 
+                                   value="{{ pdf_data.po_number }}" required {% if pdf_data.processed %}readonly{% endif %}>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="dollarValue" class="form-label"><strong>Dollar Value (Ex GST) *</strong></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" step="0.01" class="form-control" id="dollarValue" 
+                                       name="dollar_value" value="{{ pdf_data.dollar_value }}" required {% if pdf_data.processed %}readonly{% endif %}>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="measureDate" class="form-label">Measure Date</label>
+                            <input type="date" class="form-control" id="measureDate" 
+                                   name="measure_date" value="{{ pdf_data.extracted_data.get('measure_date', '') }}" {% if pdf_data.processed %}readonly{% endif %}>
+                    </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="estimatedDeliveryDate" class="form-label">Estimated Delivery Date</label>
+                            <input type="date" class="form-control" id="estimatedDeliveryDate" 
+                                   name="estimated_delivery_date" value="{{ pdf_data.extracted_data.get('estimated_delivery_date', '') }}" {% if pdf_data.processed %}readonly{% endif %}>
+                    </div>
+                </div>
+                
+                    <div class="mb-4 mt-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="isProvisional" name="is_provisional" 
+                                   {{ 'checked' if pdf_data.extracted_data.get('is_provisional') else '' }} {% if pdf_data.processed %}disabled{% endif %}>
+                            <label class="form-check-label" for="isProvisional">
+                                <strong>Provisional (PC Allowance)</strong>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Supervisor Details -->
+                    <h6 class="mt-1 mb-4 text-primary text-center">Supervisor Details</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="supervisorName" class="form-label">Supervisor Name</label>
+                            <input type="text" class="form-control" id="supervisorName" name="supervisor_name" 
+                                   value="{{ pdf_data.extracted_data.get('supervisor_name', '') }}" {% if pdf_data.processed %}readonly{% endif %}>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="supervisorPhone" class="form-label">Supervisor Phone</label>
+                            <input type="text" class="form-control" id="supervisorPhone" name="supervisor_phone" 
+                                   value="{{ pdf_data.extracted_data.get('supervisor_phone', '') }}" {% if pdf_data.processed %}readonly{% endif %}>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="supervisorMobile" class="form-label">Supervisor Mobile</label>
+                            <input type="text" class="form-control" id="supervisorMobile" name="supervisor_mobile" 
+                                   value="{{ pdf_data.extracted_data.get('supervisor_mobile', '') }}" {% if pdf_data.processed %}readonly{% endif %}>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+            <!-- Sold To Builder on File or New Customer Section -->
+            <div class="card mb-3">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-building"></i> Sold To Builder on File or New Customer</h5>
+            </div>
+            <div class="card-body">
+                    <!-- Option Selection -->
+                    <div class="mb-3">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="soldToOption" id="searchBuilder" value="search" {% set doc_type = pdf_data.extracted_data.get('document_type', 'purchase_order') %}{% if doc_type == 'customer_enquiry' %} {% else %}checked{% endif %} {% if pdf_data.processed %}disabled{% endif %}>
+                            <label class="form-check-label" for="searchBuilder">
+                                <strong>Search Existing Builder</strong>
+                            </label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="soldToOption" id="createCustomer" value="create" {% if doc_type == 'customer_enquiry' %}checked{% endif %} {% if pdf_data.processed %}disabled{% endif %}>
+                            <label class="form-check-label" for="createCustomer">
+                                <strong>Create New Customer</strong>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Search Builder Section -->
+                    <div id="searchBuilderSection">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="soldToSearch" placeholder="Search for builder..." value="" {% if pdf_data.processed %}readonly{% endif %}>
+                            <button class="btn btn-outline-secondary" type="button" onclick="searchSoldToBuilders()" {% if pdf_data.processed %}disabled{% endif %}>
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                            <span id="soldToSearchSpinner" class="input-group-text" style="display: none;">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </span>
+                        </div>
+                        
+                        <div id="soldToResults" class="list-group mb-3" style="display: none; max-height: 300px; overflow-y: auto;"></div>
+                        
+                        <div id="soldToDetails" style="display: none;">
+                            <div class="alert alert-success">
+                                <h6 class="alert-heading">Selected Builder</h6>
+                                <div id="soldToDetailsContent"></div>
+                                {% if not pdf_data.processed %}
+                                <button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="clearSoldToSelection()">
+                                    <i class="fas fa-times"></i> Clear Selection
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Create Customer Section -->
+                    <div id="createCustomerSection" style="display: none;">
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading"><i class="fas fa-info-circle"></i> Create New Customer</h6>
+                            <p class="mb-2">A new customer will be created using the Ship To details below.</p>
+                            <p class="mb-0"><strong>Customer Name:</strong> <span id="newCustomerName">{{ pdf_data.extracted_data.get('customer_name', '') }}</span></p>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="newCustomerFirstName" class="form-label">First Name *</label>
+                                <input type="text" class="form-control" id="newCustomerFirstName" name="new_customer_first_name" 
+                                       value="{{ pdf_data.extracted_data.get('first_name', '') }}" required {% if pdf_data.processed %}readonly{% endif %}>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="newCustomerLastName" class="form-label">Last Name *</label>
+                                <input type="text" class="form-control" id="newCustomerLastName" name="new_customer_last_name" 
+                                       value="{{ pdf_data.extracted_data.get('last_name', '') }}" required {% if pdf_data.processed %}readonly{% endif %}>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="newCustomerMobile" class="form-label">Mobile</label>
+                                <input type="text" class="form-control" id="newCustomerMobile" name="new_customer_mobile" 
+                                       value="{{ pdf_data.extracted_data.get('mobile', '') }}" {% if pdf_data.processed %}readonly{% endif %}>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="newCustomerPhone" class="form-label">Phone</label>
+                                <input type="text" class="form-control" id="newCustomerPhone" name="new_customer_phone" 
+                                       value="{{ pdf_data.extracted_data.get('phone', '') }}" {% if pdf_data.processed %}readonly{% endif %}>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="newCustomerEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="newCustomerEmail" name="new_customer_email" 
+                                       value="{{ pdf_data.extracted_data.get('email', '') }}" {% if pdf_data.processed %}readonly{% endif %}>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="newCustomerAddress1" class="form-label">Address Line 1 *</label>
+                                <input type="text" class="form-control" id="newCustomerAddress1" name="new_customer_address1" 
+                                       value="{{ pdf_data.extracted_data.get('address1', '') }}" required {% if pdf_data.processed %}readonly{% endif %}>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="newCustomerAddress2" class="form-label">Address Line 2</label>
+                                <input type="text" class="form-control" id="newCustomerAddress2" name="new_customer_address2" 
+                                       value="{{ pdf_data.extracted_data.get('address2', '') }}" {% if pdf_data.processed %}readonly{% endif %}>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="newCustomerCity" class="form-label">City</label>
+                                <div class="position-relative">
+                                    <input type="text" class="form-control" id="newCustomerCity" name="new_customer_city" 
+                                           value="{{ pdf_data.extracted_data.get('city', '') }}" placeholder="Start typing suburb name..." autocomplete="off" {% if pdf_data.processed %}readonly{% endif %}>
+                                    <div id="newCustomerCityAutocomplete" class="list-group position-absolute w-100" style="display: none; z-index: 1000; max-height: 300px; overflow-y: auto; margin-top: 2px;"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="newCustomerState" class="form-label">State</label>
+                                <select class="form-select" id="newCustomerState" name="new_customer_state" {% if pdf_data.processed %}disabled{% endif %}>
+                                    <option value="">Select State</option>
+                                    <option value="QLD" {% if pdf_data.extracted_data.get('state', '') == 'QLD' %}selected{% endif %}>QLD</option>
+                                    <option value="NSW" {% if pdf_data.extracted_data.get('state', '') == 'NSW' %}selected{% endif %}>NSW</option>
+                                    <option value="VIC" {% if pdf_data.extracted_data.get('state', '') == 'VIC' %}selected{% endif %}>VIC</option>
+                                    <option value="WA" {% if pdf_data.extracted_data.get('state', '') == 'WA' %}selected{% endif %}>WA</option>
+                                    <option value="SA" {% if pdf_data.extracted_data.get('state', '') == 'SA' %}selected{% endif %}>SA</option>
+                                    <option value="TAS" {% if pdf_data.extracted_data.get('state', '') == 'TAS' %}selected{% endif %}>TAS</option>
+                                    <option value="ACT" {% if pdf_data.extracted_data.get('state', '') == 'ACT' %}selected{% endif %}>ACT</option>
+                                    <option value="NT" {% if pdf_data.extracted_data.get('state', '') == 'NT' %}selected{% endif %}>NT</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="newCustomerPostalCode" class="form-label">Postal Code</label>
+                                <input type="text" class="form-control" id="newCustomerPostalCode" name="new_customer_postal_code" 
+                                       value="{{ pdf_data.extracted_data.get('postal_code', '') }}" maxlength="4" {% if pdf_data.processed %}readonly{% endif %}>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" id="soldToCustomerId" name="sold_to_customer_id">
+                </div>
+            </div>
+            
+            <!-- Ship To Details Section (Combined Job Address and Contact) -->
+            <div class="card mb-3">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-shipping-fast"></i> Ship To Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="useSoldToDetails" name="use_sold_to_details" {% if pdf_data.processed %}disabled{% endif %}>
+                            <label class="form-check-label" for="useSoldToDetails">
+                                <strong>Use Sold To Details</strong>
+                            </label>
+                            <small class="d-block text-muted">Check this to use the Sold To builder's details for Ship To</small>
+                        </div>
+                    </div>
+                    
+                    <div id="shipToContactFields">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="contactFirstName" class="form-label">First Name *</label>
+                                <input type="text" class="form-control" id="contactFirstName" 
+                                       name="contact_first_name" value="{{ pdf_data.extracted_data.get('first_name', '') }}" required {% if pdf_data.processed %}readonly{% endif %}>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="contactLastName" class="form-label">Last Name *</label>
+                                <input type="text" class="form-control" id="contactLastName" 
+                                       name="contact_last_name" value="{{ pdf_data.extracted_data.get('last_name', '') }}" required {% if pdf_data.processed %}readonly{% endif %}>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="contactMobile" class="form-label">Mobile</label>
+                                <input type="text" class="form-control" id="contactMobile" 
+                                       name="contact_mobile" value="{{ pdf_data.extracted_data.get('mobile', '') }}" {% if pdf_data.processed %}readonly{% endif %}>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="contactPhone" class="form-label">Phone</label>
+                                <input type="text" class="form-control" id="contactPhone" 
+                                       name="contact_phone" value="{{ pdf_data.extracted_data.get('phone', '') }}" {% if pdf_data.processed %}readonly{% endif %}>
+                        </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="contactEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="contactEmail" 
+                                       name="contact_email" value="{{ pdf_data.extracted_data.get('email', '') }}" {% if pdf_data.processed %}readonly{% endif %}>
+                        </div>
+                    </div>
+                    
+                        <!-- Job Address -->
+                        <h6 class="text-success mb-2 mt-4"><i class="fas fa-map-marker-alt"></i> Job Address</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="address1" class="form-label">Address Line 1 *</label>
+                                <input type="text" class="form-control" id="address1" name="address1" 
+                                       value="{{ pdf_data.extracted_data.get('address1', '') }}" required {% if pdf_data.processed %}readonly{% endif %}>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="address2" class="form-label">Address Line 2</label>
+                                <input type="text" class="form-control" id="address2" name="address2" 
+                                       value="{{ pdf_data.extracted_data.get('address2', '') }}" {% if pdf_data.processed %}readonly{% endif %}>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="city" class="form-label">City *</label>
+                                <div class="position-relative">
+                                    <input type="text" class="form-control" id="city" name="city" 
+                                           value="{{ pdf_data.extracted_data.get('city', '') }}" placeholder="Start typing suburb name..." autocomplete="off" required {% if pdf_data.processed %}readonly{% endif %}>
+                                    <div id="cityAutocomplete" class="list-group position-absolute w-100" style="display: none; z-index: 1000; max-height: 300px; overflow-y: auto; margin-top: 2px;"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="state" class="form-label">State *</label>
+                                <select class="form-select" id="state" name="state" required {% if pdf_data.processed %}disabled{% endif %}>
+                                    <option value="">Select State</option>
+                                    <option value="QLD" {% if pdf_data.extracted_data.get('state', '') == 'QLD' %}selected{% endif %}>QLD</option>
+                                    <option value="NSW" {% if pdf_data.extracted_data.get('state', '') == 'NSW' %}selected{% endif %}>NSW</option>
+                                    <option value="VIC" {% if pdf_data.extracted_data.get('state', '') == 'VIC' %}selected{% endif %}>VIC</option>
+                                    <option value="WA" {% if pdf_data.extracted_data.get('state', '') == 'WA' %}selected{% endif %}>WA</option>
+                                    <option value="SA" {% if pdf_data.extracted_data.get('state', '') == 'SA' %}selected{% endif %}>SA</option>
+                                    <option value="TAS" {% if pdf_data.extracted_data.get('state', '') == 'TAS' %}selected{% endif %}>TAS</option>
+                                    <option value="ACT" {% if pdf_data.extracted_data.get('state', '') == 'ACT' %}selected{% endif %}>ACT</option>
+                                    <option value="NT" {% if pdf_data.extracted_data.get('state', '') == 'NT' %}selected{% endif %}>NT</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="postalCode" class="form-label">Postal Code *</label>
+                                <input type="text" class="form-control" id="postalCode" name="postal_code" 
+                                       value="{{ pdf_data.extracted_data.get('postal_code', '') }}" required maxlength="4" {% if pdf_data.processed %}readonly{% endif %}>
+                        </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Suburb autocomplete functionality -->
+                <script>
+                // Suburb autocomplete for Job Address (city field)
+                function initSuburbAutocomplete(inputId, stateSelectId, postcodeInputId, autocompleteId) {
+                    const suburbInput = document.getElementById(inputId);
+                    const stateSelect = document.getElementById(stateSelectId);
+                    const postalCodeInput = document.getElementById(postcodeInputId);
+                    const suburbAutocomplete = document.getElementById(autocompleteId);
+                    
+                    if (!suburbInput || !stateSelect || !postalCodeInput || !suburbAutocomplete) {
+                        return; // Elements don't exist or page is readonly
+                    }
+                    
+                    if (suburbInput.readOnly) {
+                        return; // Skip if field is readonly
+                    }
+                    
+                    let suburbLookupTimeout;
+                    let selectedSuburb = null;
+                    
+                    // Search suburbs as user types
+                    suburbInput.addEventListener('input', function() {
+                        clearTimeout(suburbLookupTimeout);
+                        const query = this.value.trim();
+                        selectedSuburb = null;
+                        
+                        if (query.length >= 2) {
+                            suburbLookupTimeout = setTimeout(() => {
+                                searchSuburbs(query, autocompleteId);
+                            }, 300);
+                        } else {
+                            hideSuburbAutocomplete(autocompleteId);
+                            if (query.length === 0) {
+                                postalCodeInput.value = '';
+                            }
+                        }
+                    });
+                    
+                    // Handle keyboard navigation
+                    suburbInput.addEventListener('keydown', function(e) {
+                        if (!suburbAutocomplete || suburbAutocomplete.style.display === 'none') {
+                            return;
+                        }
+                        
+                        const items = suburbAutocomplete.querySelectorAll('.list-group-item');
+                        const currentActive = suburbAutocomplete.querySelector('.list-group-item.active');
+                        
+                        if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            if (currentActive) {
+                                currentActive.classList.remove('active');
+                                const next = currentActive.nextElementSibling;
+                                if (next) {
+                                    next.classList.add('active');
+                                    next.scrollIntoView({ block: 'nearest' });
+                                } else {
+                                    items[0]?.classList.add('active');
+                                }
+                            } else {
+                                items[0]?.classList.add('active');
+                            }
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            if (currentActive) {
+                                currentActive.classList.remove('active');
+                                const prev = currentActive.previousElementSibling;
+                                if (prev) {
+                                    prev.classList.add('active');
+                                    prev.scrollIntoView({ block: 'nearest' });
+                                } else {
+                                    items[items.length - 1]?.classList.add('active');
+                                }
+                            } else {
+                                items[items.length - 1]?.classList.add('active');
+                            }
+                        } else if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (currentActive) {
+                                currentActive.click();
+                            }
+                        } else if (e.key === 'Escape') {
+                            hideSuburbAutocomplete(autocompleteId);
+                        }
+                    });
+                    
+                    // Hide autocomplete when clicking outside
+                    document.addEventListener('click', function(e) {
+                        if (suburbAutocomplete && suburbAutocomplete.style.display !== 'none') {
+                            if (!suburbInput.contains(e.target) && !suburbAutocomplete.contains(e.target)) {
+                                hideSuburbAutocomplete(autocompleteId);
+                            }
+                        }
+                    });
+                    
+                    function searchSuburbs(query, autocompleteId) {
+                        fetch(`/api/suburbs/search?q=${encodeURIComponent(query)}&limit=10`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.suburbs && data.suburbs.length > 0) {
+                                    showSuburbAutocomplete(data.suburbs, autocompleteId, inputId, stateSelectId, postcodeInputId);
+                                } else {
+                                    hideSuburbAutocomplete(autocompleteId);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error searching suburbs:', error);
+                                hideSuburbAutocomplete(autocompleteId);
+                            });
+                    }
+                    
+                    function showSuburbAutocomplete(suburbs, autocompleteId, inputId, stateSelectId, postcodeInputId) {
+                        const autocomplete = document.getElementById(autocompleteId);
+                        if (!autocomplete) return;
+                        
+                        autocomplete.innerHTML = '';
+                        
+                        suburbs.forEach((suburb, index) => {
+                            const item = document.createElement('a');
+                            item.href = '#';
+                            item.className = 'list-group-item list-group-item-action';
+                            if (index === 0) {
+                                item.classList.add('active');
+                            }
+                            item.innerHTML = `
+                                <div class="d-flex justify-content-between">
+                                    <strong>${escapeHtml(suburb.suburb)}</strong>
+                                    <span class="text-muted">${escapeHtml(suburb.postcode)} ${escapeHtml(suburb.state)}</span>
+                                </div>
+                            `;
+                            item.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                selectSuburb(suburb, inputId, stateSelectId, postcodeInputId, autocompleteId);
+                            });
+                            autocomplete.appendChild(item);
+                        });
+                        
+                        autocomplete.style.display = 'block';
+                    }
+                    
+                    function hideSuburbAutocomplete(autocompleteId) {
+                        const autocomplete = document.getElementById(autocompleteId);
+                        if (!autocomplete) return;
+                        autocomplete.style.display = 'none';
+                        autocomplete.innerHTML = '';
+                    }
+                    
+                    function escapeHtml(text) {
+                        const div = document.createElement('div');
+                        div.textContent = text;
+                        return div.innerHTML;
+                    }
+                    
+                    function selectSuburb(suburb, inputId, stateSelectId, postcodeInputId, autocompleteId) {
+                        const suburbInput = document.getElementById(inputId);
+                        const stateSelect = document.getElementById(stateSelectId);
+                        const postalCodeInput = document.getElementById(postcodeInputId);
+                        
+                        if (suburbInput) suburbInput.value = suburb.suburb;
+                        if (stateSelect) stateSelect.value = suburb.state;
+                        if (postalCodeInput) postalCodeInput.value = suburb.postcode;
+                        
+                        // Add visual feedback
+                        if (postalCodeInput) {
+                            postalCodeInput.style.backgroundColor = '#d4edda';
+                            postalCodeInput.style.borderColor = '#28a745';
+                            setTimeout(() => {
+                                postalCodeInput.style.backgroundColor = '';
+                                postalCodeInput.style.borderColor = '';
+                            }, 2000);
+                        }
+                        if (stateSelect) {
+                            stateSelect.style.backgroundColor = '#d4edda';
+                            stateSelect.style.borderColor = '#28a745';
+                            setTimeout(() => {
+                                stateSelect.style.backgroundColor = '';
+                                stateSelect.style.borderColor = '';
+                            }, 2000);
+                        }
+                        
+                        hideSuburbAutocomplete(autocompleteId);
+                    }
+                }
+                
+                // Initialize autocomplete on page load
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Initialize for Job Address city field
+                    initSuburbAutocomplete('city', 'state', 'postalCode', 'cityAutocomplete');
+                    
+                    // Initialize for New Customer city field
+                    initSuburbAutocomplete('newCustomerCity', 'newCustomerState', 'newCustomerPostalCode', 'newCustomerCityAutocomplete');
+                });
+                </script>
+                
+            <!-- All Contacts Section -->
+            {% if pdf_data.extracted_data.get('main_contacts') %}
+            <div class="card mb-3">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-users"></i> All Contacts from Document</h5>
+                </div>
+                <div class="card-body">
+                    <div id="contactsList">
+                        {% for contact in pdf_data.extracted_data.get('main_contacts', []) %}
+                        <div class="border rounded p-3 mb-2">
+                            <strong>{{ contact.get('title', 'Contact') }}</strong><br>
+                            Name: {{ contact.get('first_name', '') }} {{ contact.get('last_name', '') }}<br>
+                            {% if contact.get('mobile') %}Mobile: {{ contact.mobile }}<br>{% endif %}
+                            {% if contact.get('phone') %}Phone: {{ contact.phone }}<br>{% endif %}
+                            {% if contact.get('emails') %}Email: {{ contact.emails }}<br>{% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <small class="text-muted">These contacts will be included in RFMS notes</small>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Job Description Section -->
+            <div class="card mb-3">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-clipboard-list"></i> Job Description</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="jobSummary" class="form-label">Job Summary</label>
+                        <textarea class="form-control" id="jobSummary" name="job_summary" rows="2" {% if pdf_data.processed %}readonly{% endif %}>{{ pdf_data.extracted_data.get('job_summary', '') }}</textarea>
+                        </div>
+                    <div class="mb-3">
+                        <label for="scopeOfWork" class="form-label">Scope of Work *</label>
+                        <textarea class="form-control" id="scopeOfWork" name="scope_of_work" rows="6" required {% if pdf_data.processed %}readonly{% endif %}>{{ pdf_data.scope_of_work }}</textarea>
+                        <small class="text-muted">This will appear in RFMS public notes</small>
+                        </div>
+                        </div>
+                    </div>
+                    
+        </form>
+                </div>
+                
+    <!-- Right Column: Actions -->
+    <div class="col-md-4">
+        <!-- Actions Section -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-cogs"></i> Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if not pdf_data.processed %}
+                    <button type="button" class="btn btn-primary btn-lg" onclick="exportToRFMS()" id="exportBtn">
+                        <i class="fas fa-file-export"></i> Export to RFMS
+                    </button>
+                    {% endif %}
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Configuration Settings -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-cog"></i> Configuration Settings</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0 small">
+                    <dt class="col-sm-5">Document Type</dt>
+                    <dd class="col-sm-7">
+                        {% set doc_type = pdf_data.extracted_data.get('document_type', 'purchase_order') %}
+                        {% if doc_type == 'quotation' %}
+                            <span class="badge bg-info">Quote</span>
+                        {% elif doc_type == 'customer_enquiry' %}
+                            <span class="badge bg-warning">Customer Enquiry</span>
+                        {% else %}
+                            <span class="badge bg-primary">Purchase Order</span>
+                        {% endif %}
+                    </dd>
+                    
+                    <dt class="col-sm-5">Salesperson</dt>
+                    <dd class="col-sm-7">{{ pdf_data.extracted_data.get('salesperson', 'Not set') }}</dd>
+                    
+                    <dt class="col-sm-5">Contract Type</dt>
+                    <dd class="col-sm-7">{{ pdf_data.extracted_data.get('contract_type', 'Not set') }}</dd>
+                    
+                    <dt class="col-sm-5">Order Type</dt>
+                    <dd class="col-sm-7">{{ pdf_data.extracted_data.get('order_type', 'Not set') }}</dd>
+                    
+                    <dt class="col-sm-5">Ad Source</dt>
+                    <dd class="col-sm-7">{{ pdf_data.extracted_data.get('ad_source', 'Not set') }}</dd>
+                    
+                    <dt class="col-sm-5">Installation Status</dt>
+                    <dd class="col-sm-7">
+                        {% set date_type = pdf_data.extracted_data.get('date_type', 'estimated') %}
+                        {% if date_type == 'scheduled' %}
+                            <span class="badge bg-success">Scheduled</span>
+                        {% else %}
+                            <span class="badge bg-warning">Estimated</span>
+                        {% endif %}
+                    </dd>
+                    
+                    <dt class="col-sm-5">Labour/Service Type</dt>
+                    <dd class="col-sm-7">{{ pdf_data.extracted_data.get('labour_service_type', 'Not set') }}</dd>
+                    
+                    {% if pdf_data.extracted_data.get('required_date') %}
+                    <dt class="col-sm-5">Required Date</dt>
+                    <dd class="col-sm-7">{{ pdf_data.extracted_data.get('required_date', 'Not set') }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+        
+        <!-- File Information -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-file-pdf"></i> File Information</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0 small">
+                    <dt class="col-sm-4">Filename</dt>
+                    <dd class="col-sm-8">{{ pdf_data.filename }}</dd>
+                    
+                    <dt class="col-sm-4">Uploaded</dt>
+                    <dd class="col-sm-8">{{ pdf_data.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+                    
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">
+                        {% if pdf_data.processed %}
+                            <span class="badge bg-success">Processed</span>
+                        {% else %}
+                            <span class="badge bg-warning">Pending</span>
+                        {% endif %}
+                    </dd>
+                    
+                    {% if pdf_data.rfms_status %}
+                    <dt class="col-sm-4">RFMS Status</dt>
+                    <dd class="col-sm-8">
+                        {% if pdf_data.rfms_status == 'new_order' %}
+                            <span class="badge bg-success">New Order</span>
+                        {% elif pdf_data.rfms_status == 'billing_group_added' %}
+                            <span class="badge bg-info">Billing Group</span>
+                        {% elif pdf_data.rfms_status == 'existing_order' %}
+                            <span class="badge bg-warning text-dark">Already Exists</span>
+                        {% elif pdf_data.rfms_status == 'new_quote' %}
+                            <span class="badge bg-primary">New Quote</span>
+                        {% elif pdf_data.rfms_status == 'existing_quote' %}
+                            <span class="badge bg-warning text-dark">Quote Exists</span>
+                        {% endif %}
+                    </dd>
+                    {% endif %}
+                    
+                    {% if pdf_data.rfms_document_number %}
+                    <dt class="col-sm-4">RFMS Doc #</dt>
+                    <dd class="col-sm-8">{{ pdf_data.rfms_document_number }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Store selected Sold To builder
+let selectedSoldTo = null;
+let searchTimeout = null;
+
+// Store original Ship To values from PDF extraction
+const originalShipToValues = {
+    contactFirstName: '',
+    contactLastName: '',
+    contactMobile: '',
+    contactPhone: '',
+    contactEmail: '',
+    address1: '',
+    address2: '',
+    city: '',
+    state: '',
+    postalCode: ''
+};
+
+function hideStatusMessage() {
+    const alertBox = document.getElementById('statusAlert');
+    if (!alertBox) return;
+    alertBox.className = 'alert d-none';
+    alertBox.textContent = '';
+}
+
+function displayStatusMessage(message, type) {
+    const alertBox = document.getElementById('statusAlert');
+    if (!alertBox) return;
+    alertBox.className = `alert alert-${type}`;
+    alertBox.textContent = message;
+    alertBox.classList.remove('d-none');
+}
+
+function showSuccessMessage(message) {
+    displayStatusMessage(message, 'success');
+}
+
+function showErrorMessage(message) {
+    displayStatusMessage(message, 'danger');
+}
+
+function showInfoMessage(message) {
+    displayStatusMessage(message, 'info');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    hideStatusMessage();
+    // Check if job is processed and disable all interactions
+    const isProcessed = {{ 'true' if pdf_data.processed else 'false' }};
+    
+    // Set default based on document type
+    const documentType = '{{ pdf_data.extracted_data.get("document_type", "purchase_order") }}';
+    const searchBuilder = document.getElementById('searchBuilder');
+    const createCustomer = document.getElementById('createCustomer');
+    const searchSection = document.getElementById('searchBuilderSection');
+    const createSection = document.getElementById('createCustomerSection');
+    
+    if (documentType === 'customer_enquiry' && createCustomer.checked) {
+        // Show create customer section for customer enquiry forms
+        searchSection.style.display = 'none';
+        createSection.style.display = 'block';
+    } else if (searchBuilder.checked) {
+        // Show search builder section for other document types
+        searchSection.style.display = 'block';
+        createSection.style.display = 'none';
+    }
+    
+    if (isProcessed) {
+        // Style all readonly inputs
+        document.querySelectorAll('input[readonly], textarea[readonly]').forEach(function(element) {
+            element.style.backgroundColor = '#e9ecef';
+            element.style.cursor = 'not-allowed';
+        });
+        
+        // Style all disabled inputs and checkboxes
+        document.querySelectorAll('input[disabled], textarea[disabled], button[disabled]').forEach(function(element) {
+            element.style.cursor = 'not-allowed';
+        });
+    }
+    
+    // Save original values when page loads
+    originalShipToValues.contactFirstName = document.getElementById('contactFirstName').value;
+    originalShipToValues.contactLastName = document.getElementById('contactLastName').value;
+    originalShipToValues.contactMobile = document.getElementById('contactMobile').value;
+    originalShipToValues.contactPhone = document.getElementById('contactPhone').value;
+    originalShipToValues.contactEmail = document.getElementById('contactEmail').value;
+    originalShipToValues.address1 = document.getElementById('address1').value;
+    originalShipToValues.address2 = document.getElementById('address2').value;
+    originalShipToValues.city = document.getElementById('city').value;
+    originalShipToValues.state = document.getElementById('state').value;
+    originalShipToValues.postalCode = document.getElementById('postalCode').value;
+    
+    // Handle Sold To option radio buttons
+    document.querySelectorAll('input[name="soldToOption"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            const searchSection = document.getElementById('searchBuilderSection');
+            const createSection = document.getElementById('createCustomerSection');
+            
+            if (this.value === 'search') {
+                searchSection.style.display = 'block';
+                createSection.style.display = 'none';
+                // Clear any existing selection when switching to search
+                clearSoldToSelection();
+            } else if (this.value === 'create') {
+                searchSection.style.display = 'none';
+                createSection.style.display = 'block';
+                // Clear any existing selection when switching to create
+                clearSoldToSelection();
+            }
+        });
+    });
+    
+    // Handle Use Sold To Details checkbox
+    document.getElementById('useSoldToDetails').addEventListener('change', function() {
+        // Don't do anything if the job is already processed
+        if (isProcessed) return;
+        
+        const shipToFields = document.getElementById('shipToContactFields');
+        if (this.checked && selectedSoldTo) {
+            // Populate Ship To with Sold To details
+            document.getElementById('contactFirstName').value = selectedSoldTo.shipToFirstName || '';
+            document.getElementById('contactLastName').value = selectedSoldTo.shipToLastName || '';
+            document.getElementById('contactMobile').value = selectedSoldTo.customerPhone2 || '';
+            document.getElementById('contactPhone').value = selectedSoldTo.customerPhone || '';
+            document.getElementById('contactEmail').value = selectedSoldTo.customerEmail || '';
+            
+            // Populate address fields with Sold To address
+            document.getElementById('address1').value = selectedSoldTo.customerAddress || '';
+            document.getElementById('address2').value = selectedSoldTo.customerAddress2 || '';
+            document.getElementById('city').value = selectedSoldTo.customerCity || '';
+            document.getElementById('state').value = selectedSoldTo.customerState || '';
+            document.getElementById('postalCode').value = selectedSoldTo.customerZIP || '';
+            
+            // Disable contact fields
+            shipToFields.querySelectorAll('input').forEach(input => {
+                input.disabled = true;
+                input.style.backgroundColor = '#e9ecef';
+                input.style.cursor = 'not-allowed';
+            });
+            
+            // Disable address fields
+            document.getElementById('address1').disabled = true;
+            document.getElementById('address1').style.backgroundColor = '#e9ecef';
+            document.getElementById('address1').style.cursor = 'not-allowed';
+            document.getElementById('address2').disabled = true;
+            document.getElementById('address2').style.backgroundColor = '#e9ecef';
+            document.getElementById('address2').style.cursor = 'not-allowed';
+            document.getElementById('city').disabled = true;
+            document.getElementById('city').style.backgroundColor = '#e9ecef';
+            document.getElementById('city').style.cursor = 'not-allowed';
+            document.getElementById('state').disabled = true;
+            document.getElementById('state').style.backgroundColor = '#e9ecef';
+            document.getElementById('state').style.cursor = 'not-allowed';
+            document.getElementById('postalCode').disabled = true;
+            document.getElementById('postalCode').style.backgroundColor = '#e9ecef';
+            document.getElementById('postalCode').style.cursor = 'not-allowed';
+        } else {
+            // Restore original values
+            document.getElementById('contactFirstName').value = originalShipToValues.contactFirstName;
+            document.getElementById('contactLastName').value = originalShipToValues.contactLastName;
+            document.getElementById('contactMobile').value = originalShipToValues.contactMobile;
+            document.getElementById('contactPhone').value = originalShipToValues.contactPhone;
+            document.getElementById('contactEmail').value = originalShipToValues.contactEmail;
+            document.getElementById('address1').value = originalShipToValues.address1;
+            document.getElementById('address2').value = originalShipToValues.address2;
+            document.getElementById('city').value = originalShipToValues.city;
+            document.getElementById('state').value = originalShipToValues.state;
+            document.getElementById('postalCode').value = originalShipToValues.postalCode;
+            
+            // Enable contact fields
+            shipToFields.querySelectorAll('input').forEach(input => {
+                input.disabled = false;
+                input.style.backgroundColor = '';
+                input.style.cursor = '';
+            });
+            
+            // Enable address fields
+            document.getElementById('address1').disabled = false;
+            document.getElementById('address1').style.backgroundColor = '';
+            document.getElementById('address1').style.cursor = '';
+            document.getElementById('address2').disabled = false;
+            document.getElementById('address2').style.backgroundColor = '';
+            document.getElementById('address2').style.cursor = '';
+            document.getElementById('city').disabled = false;
+            document.getElementById('city').style.backgroundColor = '';
+            document.getElementById('city').style.cursor = '';
+            document.getElementById('state').disabled = false;
+            document.getElementById('state').style.backgroundColor = '';
+            document.getElementById('state').style.cursor = '';
+            document.getElementById('postalCode').disabled = false;
+            document.getElementById('postalCode').style.backgroundColor = '';
+            document.getElementById('postalCode').style.cursor = '';
+        }
+    });
+    
+    // Handle Enter key on Sold To search input
+    document.getElementById('soldToSearch').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchSoldToBuilders();
+        }
+    });
+    
+    // Update all contacts when supervisor details change
+    ['supervisorName', 'supervisorPhone', 'supervisorMobile'].forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('change', updateAllContacts);
+        }
+        });
+    });
+    
+function updateAllContacts() {
+    // Update the supervisor in the all contacts section if it exists
+    const supervisorName = document.getElementById('supervisorName').value;
+    const supervisorPhone = document.getElementById('supervisorPhone').value;
+    const supervisorMobile = document.getElementById('supervisorMobile').value;
+    
+    // This would update the display in the All Contacts section
+    console.log('Supervisor updated:', { supervisorName, supervisorPhone, supervisorMobile });
+}
+
+function searchSoldToBuilders() {
+    // Don't allow search if job is already processed
+    const isProcessed = {{ 'true' if pdf_data.processed else 'false' }};
+    if (isProcessed) return;
+    
+    const query = document.getElementById('soldToSearch').value;
+    if (query.length < 2) {
+        document.getElementById('soldToResults').style.display = 'none';
+        document.getElementById('soldToSearchSpinner').style.display = 'none';
+        return;
+    }
+    
+    if (searchTimeout) clearTimeout(searchTimeout);
+    
+    // Show spinner
+    document.getElementById('soldToSearchSpinner').style.display = 'inline-block';
+    
+    searchTimeout = setTimeout(() => {
+        fetch(`/api/customers/search?term=${encodeURIComponent(query)}&type=builder`)
+            .then(response => response.json())
+            .then(data => {
+                // Hide spinner
+                document.getElementById('soldToSearchSpinner').style.display = 'none';
+                
+                const resultsDiv = document.getElementById('soldToResults');
+                resultsDiv.innerHTML = '';
+                
+                if (data.length === 0) {
+                    resultsDiv.innerHTML = '<div class="list-group-item text-muted">No builders found</div>';
+                } else {
+                    data.slice(0, 10).forEach(builder => {
+                        const item = document.createElement('div');
+                        item.className = 'list-group-item list-group-item-action';
+                        const name = builder.customerBusinessName || builder.customerName || 'Unknown';
+                        const address = `${builder.customerAddress || ''} ${builder.customerCity || ''}`.trim();
+                        item.innerHTML = `
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">${name}</h6>
+                                <small>ID: ${builder.customerSourceId}</small>
+                            </div>
+                            <p class="mb-1 small">${address}</p>
+                        `;
+                        item.onclick = () => selectSoldTo(builder);
+                        resultsDiv.appendChild(item);
+                    });
+                }
+                
+                resultsDiv.style.display = 'block';
+            })
+            .catch(error => {
+                // Hide spinner on error too
+                document.getElementById('soldToSearchSpinner').style.display = 'none';
+                
+                console.error('Error searching builders:', error);
+                document.getElementById('soldToResults').innerHTML = 
+                    '<div class="list-group-item text-danger">Error searching builders</div>';
+                document.getElementById('soldToResults').style.display = 'block';
+            });
+    }, 300);
+}
+
+function selectSoldTo(builder) {
+    // Don't allow selection if job is already processed
+    const isProcessed = {{ 'true' if pdf_data.processed else 'false' }};
+    if (isProcessed) return;
+    
+    selectedSoldTo = builder;
+    
+    // Build detailed display
+    const name = builder.customerBusinessName || builder.customerName || 'Unknown';
+    const fullName = `${builder.customerFirstName || ''} ${builder.customerLastName || ''}`.trim();
+    const address = `${builder.customerAddress || ''} ${builder.customerAddress2 || ''}`.trim();
+    const cityState = `${builder.customerCity || ''}, ${builder.customerState || ''} ${builder.customerZIP || ''}`.trim();
+    
+    let detailsHTML = `
+        <dl class="row mb-0 small">
+            <dt class="col-sm-4">Business:</dt>
+            <dd class="col-sm-8">${name}</dd>
+            ${fullName ? `
+            <dt class="col-sm-4">Contact:</dt>
+            <dd class="col-sm-8">${fullName}</dd>
+            ` : ''}
+            ${address ? `
+            <dt class="col-sm-4">Address:</dt>
+            <dd class="col-sm-8">${address}</dd>
+            ` : ''}
+            ${cityState ? `
+            <dt class="col-sm-4">City/State:</dt>
+            <dd class="col-sm-8">${cityState}</dd>
+            ` : ''}
+            ${builder.customerPhone ? `
+            <dt class="col-sm-4">Phone:</dt>
+            <dd class="col-sm-8">${builder.customerPhone}</dd>
+            ` : ''}
+            ${builder.customerEmail ? `
+            <dt class="col-sm-4">Email:</dt>
+            <dd class="col-sm-8">${builder.customerEmail}</dd>
+            ` : ''}
+            <dt class="col-sm-4">Customer ID:</dt>
+            <dd class="col-sm-8">${builder.customerSourceId}</dd>
+        </dl>
+    `;
+    
+    document.getElementById('soldToDetailsContent').innerHTML = detailsHTML;
+    document.getElementById('soldToDetails').style.display = 'block';
+    document.getElementById('soldToResults').style.display = 'none';
+    document.getElementById('soldToSearch').value = '';
+    document.getElementById('soldToCustomerId').value = builder.customerSourceId;
+    
+    // If "Use Sold To Details" is checked, update Ship To fields
+    if (document.getElementById('useSoldToDetails').checked) {
+        // Populate contact fields
+        document.getElementById('contactFirstName').value = builder.shipToFirstName || '';
+        document.getElementById('contactLastName').value = builder.shipToLastName || '';
+        document.getElementById('contactMobile').value = builder.customerPhone2 || '';
+        document.getElementById('contactPhone').value = builder.customerPhone || '';
+        document.getElementById('contactEmail').value = builder.customerEmail || '';
+        
+        // Populate address fields
+        document.getElementById('address1').value = builder.customerAddress || '';
+        document.getElementById('address2').value = builder.customerAddress2 || '';
+        document.getElementById('city').value = builder.customerCity || '';
+        document.getElementById('state').value = builder.customerState || '';
+        document.getElementById('postalCode').value = builder.customerZIP || '';
+    }
+}
+
+function clearSoldToSelection() {
+    // Don't allow clearing if job is already processed
+    const isProcessed = {{ 'true' if pdf_data.processed else 'false' }};
+    if (isProcessed) return;
+    
+    selectedSoldTo = null;
+    document.getElementById('soldToDetails').style.display = 'none';
+    document.getElementById('soldToSearch').value = '';
+    document.getElementById('soldToCustomerId').value = '';
+    
+    // Clear Ship To if using Sold To details
+    if (document.getElementById('useSoldToDetails').checked) {
+        // Clear contact fields
+        document.getElementById('contactFirstName').value = '';
+        document.getElementById('contactLastName').value = '';
+        document.getElementById('contactMobile').value = '';
+        document.getElementById('contactPhone').value = '';
+        document.getElementById('contactEmail').value = '';
+        
+        // Clear address fields
+        document.getElementById('address1').value = '';
+        document.getElementById('address2').value = '';
+        document.getElementById('city').value = '';
+        document.getElementById('state').value = '';
+        document.getElementById('postalCode').value = '';
+    }
+}
+
+function exportToRFMS() {
+    // Don't allow export if job is already processed
+    const isProcessed = {{ 'true' if pdf_data.processed else 'false' }};
+    if (isProcessed) {
+        alert('This job has already been processed and exported to RFMS');
+        return;
+    }
+    
+    // Validate Sold To selection
+    const soldToOption = document.querySelector('input[name="soldToOption"]:checked').value;
+    
+    if (soldToOption === 'search') {
+        if (!selectedSoldTo || !document.getElementById('soldToCustomerId').value) {
+            alert('Please search and select a Sold To builder first');
+            return;
+        }
+    } else if (soldToOption === 'create') {
+        // Validate required fields for new customer
+        const firstName = document.getElementById('newCustomerFirstName').value;
+        const lastName = document.getElementById('newCustomerLastName').value;
+        const phone = document.getElementById('newCustomerPhone').value;
+        const email = document.getElementById('newCustomerEmail').value;
+        const address1 = document.getElementById('newCustomerAddress1').value;
+        
+        if (!firstName || !lastName || !phone || !email || !address1) {
+            alert('Please fill in all required fields for the new customer (First Name, Last Name, Phone, Email, Address Line 1)');
+            return;
+        }
+    }
+    
+    // Collect all form data
+    const formData = {
+        pdf_id: {{ pdf_data.id }},
+        po_number: document.getElementById('poNumber').value,
+        dollar_value: document.getElementById('dollarValue').value,
+        measure_date: document.getElementById('measureDate').value,
+        estimated_delivery_date: document.getElementById('estimatedDeliveryDate').value,
+        is_provisional: document.getElementById('isProvisional').checked,
+        supervisor_name: document.getElementById('supervisorName').value,
+        supervisor_phone: document.getElementById('supervisorPhone').value,
+        supervisor_mobile: document.getElementById('supervisorMobile').value,
+        address1: document.getElementById('address1').value,
+        address2: document.getElementById('address2').value,
+        city: document.getElementById('city').value,
+        state: document.getElementById('state').value,
+        postal_code: document.getElementById('postalCode').value,
+        contact_first_name: document.getElementById('contactFirstName').value,
+        contact_last_name: document.getElementById('contactLastName').value,
+        contact_mobile: document.getElementById('contactMobile').value,
+        contact_phone: document.getElementById('contactPhone').value,
+        contact_email: document.getElementById('contactEmail').value,
+        job_summary: document.getElementById('jobSummary').value,
+        scope_of_work: document.getElementById('scopeOfWork').value,
+        all_contacts: {{ pdf_data.extracted_data.get('main_contacts', []) | tojson }},
+        use_sold_to_details: document.getElementById('useSoldToDetails').checked
+    };
+    
+    // Prepare Sold To data based on selected option
+    let soldToData;
+    
+    if (soldToOption === 'search') {
+        // Use selected builder data
+        soldToData = {
+            id: selectedSoldTo.customerSourceId,
+            name: selectedSoldTo.customerBusinessName || selectedSoldTo.customerName,
+            address1: selectedSoldTo.customerAddress,
+            city: selectedSoldTo.customerCity,
+            state: selectedSoldTo.customerState,
+            postal_code: selectedSoldTo.customerZIP,
+            email: selectedSoldTo.customerEmail,
+            phone: selectedSoldTo.customerPhone,
+            mobile: selectedSoldTo.customerPhone2
+        };
+    } else if (soldToOption === 'create') {
+        // Use new customer data
+        soldToData = {
+            create_new: true,
+            first_name: document.getElementById('newCustomerFirstName').value,
+            last_name: document.getElementById('newCustomerLastName').value,
+            mobile: document.getElementById('newCustomerMobile').value,
+            phone: document.getElementById('newCustomerPhone').value,
+            email: document.getElementById('newCustomerEmail').value,
+            address1: document.getElementById('newCustomerAddress1').value,
+            address2: document.getElementById('newCustomerAddress2').value,
+            city: document.getElementById('newCustomerCity').value,
+            state: document.getElementById('newCustomerState').value,
+            postal_code: document.getElementById('newCustomerPostalCode').value
+        };
+    }
+    
+    // Prepare Ship To data
+    const shipToData = formData.use_sold_to_details ? { use_sold_to: true } : { use_sold_to: false };
+    
+    // Prepare export data
+    const exportData = {
+        document_type: document.getElementById('documentType').value,
+        form_data: formData,
+        sold_to: soldToData,
+        ship_to: shipToData,
+        pdf_id: {{ pdf_data.id }}
+    };
+    
+    // Show loading state
+    const button = document.getElementById('exportBtn');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+    button.disabled = true;
+    showInfoMessage('Exporting to RFMS. Please wait while we process your request...');
+    
+    // Send the export request
+    fetch('/api/export-to-rfms', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(exportData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const docNumber = data.document_number || data.raw_document_number || '';
+            const referenceText = docNumber ? ` with reference # ${docNumber}` : '';
+            
+            // Show processing message first
+            showInfoMessage('Processing your new customer and job details now – please keep this page open until complete.');
+            
+            if (data.additional_info) {
+                showInfoMessage(data.additional_info);
+            }
+            
+            // After a short delay, show final success message
+            setTimeout(() => {
+                const status = (data.status || '').toLowerCase();
+                const docTypeFromResponse = (data.document_type || 'order').toLowerCase();
+                const isActuallyQuote = docTypeFromResponse === 'quote' || docTypeFromResponse === 'quotation';
+                let finalMessage = '';
+                
+                if (status === 'existing_order') {
+                    finalMessage = `Customer file successfully created and attached to existing Sales Order${referenceText}.`;
+                } else if (status === 'existing_quote') {
+                    finalMessage = `Customer file successfully created and attached to existing Quote${referenceText}.`;
+                } else {
+                    // Use the document type from the response to show the correct type
+                    // Plan requires: "Customer file successfully created and a new quote or sales order has been created with document number: AQ####### or AZ######"
+                    const finalDocLabel = isActuallyQuote ? 'Quote' : 'Sales Order';
+                    // Ensure we have a document number - it should be in AQ####### or AZ###### format
+                    if (!docNumber || docNumber === 'N/A') {
+                        // Try to get it from raw_document_number or rfms_result
+                        const fallbackDocNumber = data.raw_document_number || (data.rfms_result && data.rfms_result.order && data.rfms_result.order.result) || '';
+                        if (fallbackDocNumber) {
+                            finalMessage = `Customer file successfully created and a new ${finalDocLabel} has been created with document number: ${fallbackDocNumber}`;
+                        } else {
+                            finalMessage = `Customer file successfully created and a new ${finalDocLabel} has been created with document number: ${docNumber || 'N/A'}`;
+                        }
+                    } else {
+                        finalMessage = `Customer file successfully created and a new ${finalDocLabel} has been created with document number: ${docNumber}`;
+                    }
+                }
+                
+                // Show success message in the alert box (banner)
+                showSuccessMessage(finalMessage);
+                
+                // Scroll to top to ensure success message is visible
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                
+                // Do NOT redirect automatically - let user decide when to go back to dashboard
+                // User can click the "Back to Dashboard" button or navigate away manually
+            }, 2000);
+        } else {
+            showErrorMessage('Export failed: ' + (data.error || 'Unknown error'));
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showErrorMessage('Export failed: ' + error.message);
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,11 @@
+# To update the RFMS-Uploader container on the office server, run one of these:
+
+# Option 1: SSH and run the update script directly
+ssh atoz@AtozServer 'cd /volume1/docker/RFMS-UPLOADER && git pull origin stock-recv && docker-compose down && docker-compose build --no-cache && docker-compose up -d'
+
+# Option 2: If the path is different, find it first:
+ssh atoz@AtozServer 'find /volume1/docker -name "docker-compose.yml" -type f | grep -i rfms'
+
+# Option 3: Copy the update script to server and run it
+scp update-office-server-remote.sh atoz@AtozServer:/tmp/
+ssh atoz@AtozServer 'bash /tmp/update-office-server-remote.sh'

@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  pdf-extractor:
+    build: .
+    container_name: pdf-extractor
+    ports:
+      - "5005:5000"
+    volumes:
+      # Mount application code directory so changes persist across container restarts
+      # This ensures manually copied files are used and survive container restarts
+      - /volume1/docker/pdf-extractor:/app
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=your-super-secret-key-change-this-in-production
+      - DATABASE_URL=sqlite:///instance/rfms_xtracr.db
+    restart: unless-stopped
+    networks:
+      - pdf-extractor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/rfms-status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  pdf-extractor-network:
+    driver: bridge

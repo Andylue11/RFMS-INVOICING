@@ -1,0 +1,36 @@
+==========================================
+FINAL UPDATE COMMANDS
+==========================================
+
+The server uses "docker compose" (with space) not "docker-compose" (with hyphen)
+
+Run this script:
+   .\update-server-final.ps1
+
+OR run these commands manually:
+
+1. Setup GitHub SSH:
+   ssh atoz@AtozServer "mkdir -p ~/.ssh; chmod 700 ~/.ssh; ssh-keyscan -t rsa,ecdsa,ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null; chmod 600 ~/.ssh/known_hosts"
+
+2. Update git remote:
+   ssh atoz@AtozServer "cd /volume1/docker/rfms-uploader; git remote set-url origin git@github.com:Andylue11/RFMS-UPLOADER.git"
+
+3. Pull latest code:
+   ssh atoz@AtozServer "cd /volume1/docker/rfms-uploader; git fetch origin; git checkout main; git pull origin main"
+
+4. Stop container:
+   ssh atoz@AtozServer "cd /volume1/docker/rfms-uploader; docker compose down"
+
+5. Rebuild container:
+   ssh atoz@AtozServer "cd /volume1/docker/rfms-uploader; docker compose build --no-cache"
+
+6. Start container:
+   ssh atoz@AtozServer "cd /volume1/docker/rfms-uploader; docker compose up -d"
+
+7. Check status:
+   ssh atoz@AtozServer "cd /volume1/docker/rfms-uploader; docker compose ps; docker compose logs --tail=30"
+
+==========================================
+NOTE: Use "docker compose" (space) not "docker-compose" (hyphen)
+==========================================
+

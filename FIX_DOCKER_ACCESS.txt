@@ -1,0 +1,49 @@
+==========================================
+FIX DOCKER ACCESS ON SERVER
+==========================================
+
+The issue is that Docker requires sudo, but sudo needs a password in SSH.
+
+SOLUTION 1: Add user to docker group (Recommended)
+==========================================
+SSH into the server and run:
+  sudo usermod -aG docker atoz
+
+Then log out and back in, or restart SSH session.
+
+After that, you can use docker commands without sudo.
+
+SOLUTION 2: Use Synology Docker GUI
+==========================================
+1. Log into Synology DSM web interface
+2. Open Docker package
+3. Stop the rfms-uploader container
+4. The code is already updated (git pull worked!)
+5. Restart the container from Docker GUI
+
+SOLUTION 3: Configure passwordless sudo for docker
+==========================================
+SSH into server and edit sudoers:
+  sudo visudo
+
+Add this line:
+  atoz ALL=(ALL) NOPASSWD: /usr/bin/docker, /usr/local/bin/docker, /usr/bin/docker-compose, /usr/local/bin/docker-compose
+
+Then save and exit.
+
+SOLUTION 4: Use Docker via Synology API
+==========================================
+Use Synology's Docker API or GUI to manage containers.
+
+==========================================
+QUICK CHECK
+==========================================
+
+Check if user is in docker group:
+  ssh atoz@AtozServer "groups | grep docker"
+
+If it shows "docker", you should be able to use docker without sudo.
+If not, add user to group (Solution 1).
+
+==========================================
+

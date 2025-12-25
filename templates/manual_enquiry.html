@@ -1,0 +1,1288 @@
+{% extends "base.html" %}
+
+{% block title %}Customer Enquiry Form - RFMS Uploader{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <h1 class="mb-0"><i class="fas fa-clipboard"></i> AtoZ Flooring Customer Details</h1>
+                    <div class="text-center">
+                        <small class="text-muted d-block mb-1">Document Type to Create</small>
+                        <div class="document-type-toggle document-type-toggle-xs d-inline-flex">
+                            <div id="documentTypeOptionQuote" class="document-type-option active">
+                                <span>Quote</span>
+                            </div>
+                            <div id="documentTypeOptionOrder" class="document-type-option">
+                                <span>New Sales Order</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <a href="/" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Settings -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-cog"></i> Configuration Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="salesperson" class="form-label"><strong>Salesperson</strong></label>
+                            <select class="form-select" id="salesperson" name="salesperson">
+                                <option value="ZORAN VEKIC">ZORAN VEKIC</option>
+                                <option value="STEVE WHYTE" selected>STEVE WHYTE</option>
+                                <option value="ADRIAN SIMPSON">ADRIAN SIMPSON</option>
+                                <option value="EMILY VEKIC">EMILY VEKIC</option>
+                                <option value="SHAR VEKIC">SHAR VEKIC</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="contractType" class="form-label"><strong>Contract Type</strong></label>
+                            <select class="form-select" id="contractType" name="contractType">
+                                <option value="DEPOSIT & COD" selected>DEPOSIT & COD</option>
+                                <option value="30 DAY ACCOUNT">30 DAY ACCOUNT</option>
+                                <option value="14 DAY ACCOUNT">14 DAY ACCOUNT</option>
+                                <option value="7 DAY ACCOUNT">7 DAY ACCOUNT</option>
+                                <option value="COD ACCOUNT">COD ACCOUNT</option>
+                                <option value="CREDIT CLAIM/REFUND">CREDIT CLAIM/REFUND</option>
+                                <option value="PAID IN FULL">PAID IN FULL</option>
+                                <option value="REPAYMENT PLAN">REPAYMENT PLAN</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="orderType" class="form-label"><strong>Order Type</strong></label>
+                            <select class="form-select" id="orderType" name="orderType">
+                                <option value="RESIDENTIAL HOME" selected>RESIDENTIAL HOME</option>
+                                <option value="BUILDER CLIENT ADD ON">BUILDER CLIENT ADD ON</option>
+                                <option value="COMMERCIAL OFFICE">COMMERCIAL OFFICE</option>
+                                <option value="COMMERCIAL RETAIL">COMMERCIAL RETAIL</option>
+                                <option value="COMMERCIAL RESIDENTIAL">COMMERCIAL RESIDENTIAL</option>
+                                <option value="CREDIT CLAIM/REFUND">CREDIT CLAIM/REFUND</option>
+                                <option value="GOOD WILL">GOOD WILL</option>
+                                <option value="INSTALLER REPLACEMENT">INSTALLER REPLACEMENT</option>
+                                <option value="INSTALLER S/O PURCHASE">INSTALLER S/O PURCHASE</option>
+                                <option value="MANUFACTURER REPLACEMENT">MANUFACTURER REPLACEMENT</option>
+                                <option value="NEW BUILD">NEW BUILD</option>
+                                <option value="ONLINE SEBO SALE">ONLINE SEBO SALE</option>
+                                <option value="RESIDENTIAL INSURANCE">RESIDENTIAL INSURANCE</option>
+                                <option value="RESIDENTIAL RENTAL">RESIDENTIAL RENTAL</option>
+                                <option value="RESIDENTIAL TOWNHOUSE">RESIDENTIAL TOWNHOUSE</option>
+                                <option value="RESIDENTIAL UNIT">RESIDENTIAL UNIT</option>
+                                <option value="RETURN TO MANUFACTURER">RETURN TO MANUFACTURER</option>
+                                <option value="SHORT MEASURE">SHORT MEASURE</option>
+                                <option value="SHORT SUPPLIED">SHORT SUPPLIED</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="labourServiceType" class="form-label"><strong>Labour/Service Type</strong></label>
+                            <select class="form-select" id="labourServiceType" name="labourServiceType">
+                                <option value="SUPPLY & INSTALL" selected>SUPPLY & INSTALL</option>
+                                <option value="FEATURE WORK">FEATURE WORK</option>
+                                <option value="MIXED SERVICES">MIXED SERVICES</option>
+                                <option value="FLOOR PREPARATION">FLOOR PREPARATION</option>
+                                <option value="GENERAL LABOUR">GENERAL LABOUR</option>
+                                <option value="INSTALLATION">INSTALLATION</option>
+                                <option value="MIN. CALL OUT CHARGE">MIN. CALL OUT CHARGE</option>
+                                <option value="PRODUCT ONLY RETURN">PRODUCT ONLY RETURN</option>
+                                <option value="PRODUCT REPAIRS">PRODUCT REPAIRS</option>
+                                <option value="SUPPLY ONLY">SUPPLY ONLY</option>
+                                <option value="UPLIFT ONLY">UPLIFT ONLY</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="measureDate" class="form-label"><strong>Quote/CheckMeasure Date</strong></label>
+                            <input type="date" class="form-control" id="measureDate" name="measureDate">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="dateStatus" class="form-label"><strong>Date Status</strong></label>
+                            <select class="form-select" id="dateStatus" name="dateStatus">
+                                <option value="Sales Rep to Call" selected>Sales Rep to Call</option>
+                                <option value="Confirmed">Confirmed</option>
+                                <option value="Follow Up">Follow Up</option>
+                                <option value="Sample On Loan">Sample On Loan</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="appointmentTime" class="form-label"><strong>Appointment Time</strong></label>
+                            <select class="form-select" id="appointmentTime" name="appointmentTime">
+                                <option value="">Select Time</option>
+                                <option value="7:00 AM">7:00 AM</option>
+                                <option value="7:30 AM">7:30 AM</option>
+                                <option value="8:00 AM">8:00 AM</option>
+                                <option value="8:30 AM">8:30 AM</option>
+                                <option value="9:00 AM">9:00 AM</option>
+                                <option value="9:30 AM">9:30 AM</option>
+                                <option value="10:00 AM">10:00 AM</option>
+                                <option value="10:30 AM">10:30 AM</option>
+                                <option value="11:00 AM">11:00 AM</option>
+                                <option value="11:30 AM">11:30 AM</option>
+                                <option value="12:00 PM">12:00 PM</option>
+                                <option value="12:30 PM">12:30 PM</option>
+                                <option value="1:00 PM">1:00 PM</option>
+                                <option value="1:30 PM">1:30 PM</option>
+                                <option value="2:00 PM">2:00 PM</option>
+                                <option value="2:30 PM">2:30 PM</option>
+                                <option value="3:00 PM">3:00 PM</option>
+                                <option value="3:30 PM">3:30 PM</option>
+                                <option value="4:00 PM">4:00 PM</option>
+                                <option value="4:30 PM">4:30 PM</option>
+                                <option value="5:00 PM">5:00 PM</option>
+                                <option value="5:30 PM">5:30 PM</option>
+                                <option value="6:00 PM">6:00 PM</option>
+                                <option value="6:30 PM">6:30 PM</option>
+                                <option value="7:00 PM">7:00 PM</option>
+                                <option value="7:30 PM">7:30 PM</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="installDate" class="form-label"><strong>Installation/Supply Date</strong></label>
+                            <input type="date" class="form-control" id="installDate" name="installDate">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Information Form -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-user-plus"></i> New Customer Information</h5>
+                    <small class="text-muted">Enter customer details while talking on the phone</small>
+                </div>
+                <div class="card-body">
+                    <div id="statusAlert" class="alert d-none" role="alert"></div>
+                    <form id="manualEnquiryForm">
+                        <div class="row">
+                            <!-- Customer Details -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3"><i class="fas fa-user"></i> Customer Details</h6>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="first_name" class="form-label"><strong>First Name *</strong></label>
+                                        <input type="text" class="form-control" id="first_name" name="first_name" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="surname" class="form-label"><strong>Surname *</strong></label>
+                                        <input type="text" class="form-control" id="surname" name="surname" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="business_name" class="form-label"><strong>Business Name</strong></label>
+                                    <input type="text" class="form-control" id="business_name" name="business_name">
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="phone" class="form-label"><strong>Phone Number</strong></label>
+                                        <input type="tel" class="form-control" id="phone" name="phone">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="phone2" class="form-label"><strong>Phone Number 2</strong></label>
+                                        <input type="tel" class="form-control" id="phone2" name="phone2">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="email" class="form-label"><strong>Email Address</strong></label>
+                                    <input type="email" class="form-control" id="email" name="email">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="address1" class="form-label"><strong>Address Line 1</strong></label>
+                                    <input type="text" class="form-control" id="address1" name="address1">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="address2" class="form-label"><strong>Address Line 2</strong></label>
+                                    <input type="text" class="form-control" id="address2" name="address2">
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="suburb" class="form-label"><strong>Suburb</strong></label>
+                                        <div class="position-relative">
+                                            <input type="text" class="form-control" id="suburb" name="suburb" placeholder="Start typing suburb name..." autocomplete="off">
+                                            <div id="suburbAutocomplete" class="list-group position-absolute w-100" style="display: none; z-index: 1000; max-height: 300px; overflow-y: auto; margin-top: 2px;"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="state" class="form-label"><strong>State</strong></label>
+                                        <select class="form-select" id="state" name="state">
+                                            <option value="QLD" selected>QLD</option>
+                                            <option value="NSW">NSW</option>
+                                            <option value="VIC">VIC</option>
+                                            <option value="WA">WA</option>
+                                            <option value="SA">SA</option>
+                                            <option value="TAS">TAS</option>
+                                            <option value="ACT">ACT</option>
+                                            <option value="NT">NT</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="postal_code" class="form-label"><strong>Post Code *</strong></label>
+                                        <input type="text" class="form-control" id="postal_code" name="postal_code" placeholder="Enter postcode" required maxlength="4">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Enquiry Details -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3"><i class="fas fa-clipboard-list"></i> Enquiry Details</h6>
+
+                                <div class="mb-3">
+                                    <label for="scope_of_work" class="form-label"><strong>Scope of Work</strong></label>
+                                    <textarea class="form-control" id="scope_of_work" name="scope_of_work" rows="4" placeholder="What type of flooring and for what areas is your enquiry about today?"></textarea>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="dollar_value" class="form-label"><strong>Price/Budget Value or New Order Total Price? (inc GST)</strong></label>
+                                        <input type="number" class="form-control" id="dollar_value" name="dollar_value" value="1.00" step="0.01" min="0">
+                                        <small class="form-text text-muted">Default $1.00 if no amount specified</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="adSource" class="form-label"><strong>How did you find us?</strong></label>
+                                        <select class="form-select ad-source-select" id="adSource" name="adSource" size="4">
+                                            <option value="BUILDER CLIENT">Builder Client</option>
+                                            <option value="BUILDER REFERRAL">Builder Referral</option>
+                                            <option value="CLIENT REFERRAL">Client Referral</option>
+                                            <option value="COMMUNITY LEADER ADVERTISMENT">Community Leader Advertisement</option>
+                                            <option value="ESTIMATE ONE TENDER">Estimate One Tender</option>
+                                            <option value="EXISTING CLIENT">Existing Client</option>
+                                            <option value="FACEBOOK ENQUIRY">Facebook Enquiry</option>
+                                            <option value="FAMILY REFERRAL" selected>Family Referral</option>
+                                            <option value="GOOGLE ENQUIRY">Google Enquiry</option>
+                                            <option value="INSPIRATIONS PAINT REFERRAL">Inspirations Paint Referral</option>
+                                            <option value="INSTALLER BUSINESS">Installer Business</option>
+                                            <option value="INSTALLER REFERRAL">Installer Referral</option>
+                                            <option value="KITCHEN CONNECTIONS">Kitchen Connections</option>
+                                            <option value="PHONE ENQUIRY">Phone Enquiry</option>
+                                            <option value="SHOWROOM WALK IN">Showroom Walk In</option>
+                                            <option value="SUPERVISOR/INSTALLER">Supervisor/Installer</option>
+                                            <option value="WEBSITE ENQUIRY">Website Enquiry</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="notes" class="form-label"><strong>Notes & Comments</strong></label>
+                                    <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any additional notes, special requirements, or customer preferences..."></textarea>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="attachments" class="form-label"><strong>Supporting Files</strong></label>
+                                    <p class="text-muted small mb-2">Upload plans, colour selection photos or emails to assist with this enquiry.</p>
+                                    <input type="file" class="form-control" id="attachments" name="attachments" multiple accept=".jpg,.jpeg,.png,.heic,.heif,.pdf,.doc,.docx">
+                                    <div class="mt-2">
+                                        <div class="list-group small" id="attachmentPreview">
+                                            <div class="list-group-item text-muted">No files selected</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="row mt-4 align-items-center gy-2">
+                            <div class="col-md-5">
+                                <button type="button" class="btn btn-outline-secondary w-100" onclick="clearForm()">
+                                    <i class="fas fa-eraser"></i> Clear Form
+                                </button>
+                            </div>
+                            <div class="col-md-7">
+                                <div class="d-flex justify-content-end align-items-center gap-2 flex-wrap">
+                                    <div class="d-flex flex-column enquiry-ref-wrapper align-items-start">
+                                        <label for="enquiry_number" class="form-label mb-1">
+                                            <small><strong>Enquiry Reference</strong></small>
+                                        </label>
+                                        <input type="text" class="form-control form-control-sm enquiry-ref-input" id="enquiry_number" name="enquiry_number" placeholder="Auto-filled if left empty.">
+                                    </div>
+                                    <button type="button" class="btn btn-outline-info" onclick="saveDraft()">
+                                        <i class="fas fa-save"></i> Save Draft
+                                    </button>
+                                    <button type="submit" class="btn btn-success" id="submitButton">
+                                        <i class="fas fa-paper-plane"></i> <span id="submitButtonLabel">Submit to RFMS (Quote)</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Processing Status -->
+    <div id="processingStatus" style="display: none;" class="mt-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Processing...</span>
+                </div>
+                <h4 id="processingTitle">Creating Customer & Enquiry...</h4>
+                <p class="text-muted" id="processingMessage">Please wait while we process your request...</p>
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" id="processingProgress"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.document-type-toggle {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 999px;
+    padding: 0.4rem;
+    display: flex;
+    gap: 0.5rem;
+    position: relative;
+    overflow: hidden;
+}
+.document-type-option {
+    flex: 1;
+    border-radius: 999px;
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    transition: color 0.2s ease;
+    color: rgba(20, 25, 30, 0.7);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+}
+.document-type-option.active {
+    color: #fff;
+}
+.document-type-option::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: transparent;
+    transition: background 0.25s ease;
+    z-index: 0;
+}
+.document-type-option.active::before {
+    background: linear-gradient(135deg, #01998e, #01b8aa);
+    opacity: 0.95;
+}
+.document-type-option span {
+    position: relative;
+    z-index: 1;
+}
+.document-type-toggle-sm {
+    transform: scale(0.9);
+    transform-origin: left center;
+}
+.document-type-toggle-xs {
+    transform: scale(0.67);
+    transform-origin: center;
+}
+.ad-source-select {
+    min-height: 8rem;
+    max-height: 12rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    border: 2px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.25rem;
+}
+.ad-source-select:focus {
+    border-color: #01998e;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(1, 153, 142, 0.25);
+}
+.ad-source-select option {
+    padding: 0.5rem 0.75rem;
+    margin: 0.125rem 0;
+    border-radius: 0.25rem;
+    background-color: #ffffff;
+    color: #333;
+    font-weight: 400;
+    cursor: pointer;
+}
+.ad-source-select option:hover {
+    background-color: #f0f0f0 !important;
+}
+.ad-source-select option:checked,
+.ad-source-select option:focus,
+.ad-source-select option[selected] {
+    background: #01998e !important;
+    background-color: #01998e !important;
+    color: #ffffff !important;
+    font-weight: 700;
+}
+/* For mobile/tablet - make all options more visible */
+@media (max-width: 768px) {
+    .ad-source-select {
+        min-height: 10rem;
+        max-height: 14rem;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    .ad-source-select option {
+        padding: 0.75rem 1rem;
+        min-height: 2.75rem;
+        display: block;
+        background-color: #ffffff;
+        color: #333;
+        font-size: 1rem;
+    }
+    .ad-source-select option:checked,
+    .ad-source-select option:focus,
+    .ad-source-select option[selected] {
+        background: #01998e !important;
+        background-color: #01998e !important;
+        color: #ffffff !important;
+        font-weight: 700;
+    }
+}
+.enquiry-ref-input {
+    max-width: 210px;
+    min-width: 170px;
+}
+</style>
+
+<script>
+let manualDocumentType = 'quotation';
+
+function updateSubmitButtonLabel() {
+    const label = document.getElementById('submitButtonLabel');
+    if (!label) return;
+    label.textContent = manualDocumentType === 'quotation'
+        ? 'Submit to RFMS (Quote)'
+        : 'Submit to RFMS (Sales Order)';
+}
+
+function updateDocumentTypeToggleUI() {
+    const quoteOption = document.getElementById('documentTypeOptionQuote');
+    const orderOption = document.getElementById('documentTypeOptionOrder');
+    if (!quoteOption || !orderOption) return;
+    if (manualDocumentType === 'quotation') {
+        quoteOption.classList.add('active');
+        orderOption.classList.remove('active');
+    } else {
+        quoteOption.classList.remove('active');
+        orderOption.classList.add('active');
+    }
+}
+
+function hideStatusMessage() {
+    const alertBox = document.getElementById('statusAlert');
+    if (!alertBox) return;
+    alertBox.className = 'alert d-none';
+    alertBox.textContent = '';
+}
+
+// Store timeout ID for clearing messages
+let statusMessageTimeout = null;
+
+function displayStatusMessage(message, type, persistent = false, duration = 0) {
+    const alertBox = document.getElementById('statusAlert');
+    if (!alertBox) {
+        console.error('statusAlert element not found!');
+        return;
+    }
+    
+    // Clear any existing timeout
+    if (statusMessageTimeout) {
+        clearTimeout(statusMessageTimeout);
+        statusMessageTimeout = null;
+    }
+    
+    // Make sure alert is visible and prominent
+    if (persistent && duration > 0) {
+        // For persistent messages, show message without close button for the duration
+        alertBox.className = `alert alert-${type} fade show`;
+        alertBox.innerHTML = `<strong style="font-size: 1.2em;">${message}</strong>`;
+        alertBox.style.minHeight = '60px';
+        alertBox.style.display = 'flex';
+        alertBox.style.alignItems = 'center';
+        
+        console.log(`Success message displayed and will remain visible for ${duration} seconds`);
+        
+        // After duration, add close button (message stays visible)
+        statusMessageTimeout = setTimeout(() => {
+            // After duration, add close button but keep message visible
+            alertBox.innerHTML = `
+                <strong style="font-size: 1.2em;">${message}</strong>
+                <button type="button" class="btn-close ms-auto" onclick="hideStatusMessage()" aria-label="Close"></button>
+            `;
+            alertBox.className = `alert alert-${type} alert-dismissible fade show d-flex align-items-center`;
+            console.log('Close button now available for success message');
+        }, duration * 1000);
+    } else {
+        // For regular messages, show close button immediately
+        alertBox.className = `alert alert-${type} alert-dismissible fade show`;
+        alertBox.innerHTML = `
+            <strong>${message}</strong>
+            <button type="button" class="btn-close" onclick="hideStatusMessage()" aria-label="Close"></button>
+        `;
+        alertBox.style.minHeight = '';
+        alertBox.style.display = '';
+        alertBox.style.alignItems = '';
+    }
+    
+    // Apply common styles
+    alertBox.classList.remove('d-none');
+    alertBox.style.visibility = 'visible';
+    alertBox.style.opacity = '1';
+    alertBox.style.padding = '1rem 1.5rem';
+    alertBox.style.marginBottom = '1.5rem';
+    alertBox.style.border = '2px solid';
+    alertBox.style.borderRadius = '8px';
+    
+    // For persistent messages, use flex display (already set above)
+    if (!(persistent && duration > 0)) {
+        // For regular messages, use block display and set font size
+        alertBox.style.display = 'block';
+        alertBox.style.fontSize = '1.1em';
+    } else {
+        // For persistent messages, font size is set in the innerHTML
+        alertBox.style.fontSize = '1.2em';
+    }
+    
+    // Ensure the form container is visible
+    const formContainer = document.querySelector('.card-body');
+    if (formContainer) {
+        formContainer.style.display = 'block';
+    }
+    
+    // Scroll to top to ensure message is visible
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showSuccessMessage(message, persistent = false, duration = 0) {
+    displayStatusMessage(message, 'success', persistent, duration);
+}
+
+function showErrorMessage(message) {
+    displayStatusMessage(message, 'danger');
+}
+
+function showInfoMessage(message) {
+    displayStatusMessage(message, 'info');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Load dropdown data
+    loadDropdownData();
+    const quoteOption = document.getElementById('documentTypeOptionQuote');
+    const orderOption = document.getElementById('documentTypeOptionOrder');
+    if (quoteOption && orderOption) {
+        manualDocumentType = 'quotation';
+        updateDocumentTypeToggleUI();
+        updateSubmitButtonLabel();
+        quoteOption.addEventListener('click', () => {
+            manualDocumentType = 'quotation';
+            updateDocumentTypeToggleUI();
+            updateSubmitButtonLabel();
+        });
+        orderOption.addEventListener('click', () => {
+            manualDocumentType = 'purchase_order';
+            updateDocumentTypeToggleUI();
+            updateSubmitButtonLabel();
+        });
+    }
+    updateSubmitButtonLabel();
+    
+    // Set default date to Christmas Day of current year (for measureDate if needed)
+    const currentYear = new Date().getFullYear();
+    const christmasDay = `${currentYear}-12-25`;
+    // Don't set default for measureDate - let user choose
+    
+    // Auto-generate enquiry number if empty
+    document.getElementById('enquiry_number').addEventListener('blur', function() {
+        if (!this.value.trim()) {
+            const now = new Date();
+            const enquiryNumber = 'ENQ-' + now.getFullYear() + 
+                String(now.getMonth() + 1).padStart(2, '0') + 
+                String(now.getDate()).padStart(2, '0') + '-' + 
+                String(now.getHours()).padStart(2, '0') + 
+                String(now.getMinutes()).padStart(2, '0');
+            this.value = enquiryNumber;
+        }
+    });
+    
+    // Suburb autocomplete functionality
+    let suburbLookupTimeout;
+    let selectedSuburb = null;
+    const suburbInput = document.getElementById('suburb');
+    const suburbAutocomplete = document.getElementById('suburbAutocomplete');
+    const stateSelect = document.getElementById('state');
+    const postalCodeInput = document.getElementById('postal_code');
+    
+    // Search suburbs as user types
+    suburbInput.addEventListener('input', function() {
+        clearTimeout(suburbLookupTimeout);
+        const query = this.value.trim();
+        selectedSuburb = null;
+        
+        if (query.length >= 2) {
+            suburbLookupTimeout = setTimeout(() => {
+                searchSuburbs(query);
+            }, 300);
+        } else {
+            hideSuburbAutocomplete();
+            // Clear postal code and state if query is too short
+            if (query.length === 0) {
+                postalCodeInput.value = '';
+            }
+        }
+    });
+    
+    // Hide autocomplete when clicking outside
+    document.addEventListener('click', function(e) {
+        if (suburbAutocomplete && suburbAutocomplete.style.display !== 'none') {
+            if (!suburbInput.contains(e.target) && !suburbAutocomplete.contains(e.target)) {
+                hideSuburbAutocomplete();
+            }
+        }
+    });
+    
+    // Handle keyboard navigation
+    suburbInput.addEventListener('keydown', function(e) {
+        const items = suburbAutocomplete.querySelectorAll('.list-group-item');
+        const currentActive = suburbAutocomplete.querySelector('.list-group-item.active');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (currentActive) {
+                currentActive.classList.remove('active');
+                const next = currentActive.nextElementSibling;
+                if (next) {
+                    next.classList.add('active');
+                    next.scrollIntoView({ block: 'nearest' });
+                } else {
+                    items[0]?.classList.add('active');
+                }
+            } else {
+                items[0]?.classList.add('active');
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (currentActive) {
+                currentActive.classList.remove('active');
+                const prev = currentActive.previousElementSibling;
+                if (prev) {
+                    prev.classList.add('active');
+                    prev.scrollIntoView({ block: 'nearest' });
+                } else {
+                    items[items.length - 1]?.classList.add('active');
+                }
+            } else {
+                items[items.length - 1]?.classList.add('active');
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentActive) {
+                currentActive.click();
+            }
+        } else if (e.key === 'Escape') {
+            hideSuburbAutocomplete();
+        }
+    });
+    
+    function searchSuburbs(query) {
+        fetch(`/api/suburbs/search?q=${encodeURIComponent(query)}&limit=10`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.suburbs && data.suburbs.length > 0) {
+                    showSuburbAutocomplete(data.suburbs);
+                } else {
+                    hideSuburbAutocomplete();
+                }
+            })
+            .catch(error => {
+                console.error('Error searching suburbs:', error);
+                hideSuburbAutocomplete();
+            });
+    }
+    
+    function showSuburbAutocomplete(suburbs) {
+        if (!suburbAutocomplete) return;
+        
+        suburbAutocomplete.innerHTML = '';
+        
+        suburbs.forEach((suburb, index) => {
+            const item = document.createElement('a');
+            item.href = '#';
+            item.className = 'list-group-item list-group-item-action';
+            if (index === 0) {
+                item.classList.add('active');
+            }
+            item.innerHTML = `
+                <div class="d-flex justify-content-between">
+                    <strong>${escapeHtml(suburb.suburb)}</strong>
+                    <span class="text-muted">${escapeHtml(suburb.postcode)} ${escapeHtml(suburb.state)}</span>
+                </div>
+            `;
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                selectSuburb(suburb);
+            });
+            suburbAutocomplete.appendChild(item);
+        });
+        
+        suburbAutocomplete.style.display = 'block';
+    }
+    
+    function hideSuburbAutocomplete() {
+        if (!suburbAutocomplete) return;
+        suburbAutocomplete.style.display = 'none';
+        suburbAutocomplete.innerHTML = '';
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function selectSuburb(suburb) {
+        selectedSuburb = suburb;
+        suburbInput.value = suburb.suburb;
+        stateSelect.value = suburb.state;
+        postalCodeInput.value = suburb.postcode;
+        
+        // Add visual feedback
+        postalCodeInput.style.backgroundColor = '#d4edda';
+        postalCodeInput.style.borderColor = '#28a745';
+        stateSelect.style.backgroundColor = '#d4edda';
+        stateSelect.style.borderColor = '#28a745';
+        
+        setTimeout(() => {
+            postalCodeInput.style.backgroundColor = '';
+            postalCodeInput.style.borderColor = '';
+            stateSelect.style.backgroundColor = '';
+            stateSelect.style.borderColor = '';
+        }, 2000);
+        
+        hideSuburbAutocomplete();
+    }
+    
+    // Appointment type change handler - no longer needed as we use different field structure
+    
+    // Attachment preview listener
+    const attachmentsInput = document.getElementById('attachments');
+    if (attachmentsInput) {
+        attachmentsInput.addEventListener('change', updateAttachmentPreview);
+    }
+
+    // Form submission
+    const manualEnquiryForm = document.getElementById('manualEnquiryForm');
+    manualEnquiryForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitManualEnquiry();
+    });
+    
+    // Initialize form protection flags
+    window.formDataPreserved = false;
+    window.allowFormReset = false;
+    
+    // Protect form from accidental resets - wrap the form's reset method
+    const originalReset = manualEnquiryForm.reset.bind(manualEnquiryForm);
+    manualEnquiryForm.reset = function() {
+        if (window.formDataPreserved && !window.allowFormReset) {
+            console.warn('Form reset prevented - form data is preserved after submission');
+            console.warn('Form fields will remain filled. Use the "Clear Form" button to clear.');
+            return;
+        }
+        return originalReset();
+    };
+
+    loadDraft();
+});
+
+function loadDropdownData() {
+    // Load salespersons
+    fetch('/api/salespersons')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const select = document.getElementById('salesperson');
+                select.innerHTML = '';
+                data.salespersons.forEach(person => {
+                    const option = document.createElement('option');
+                    option.value = person.name;
+                    option.textContent = person.name;
+                    if (person.name === 'STEVE WHYTE') option.selected = true;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading salespersons:', error));
+    
+    // Load contract types
+    fetch('/api/contract-types')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const select = document.getElementById('contractType');
+                select.innerHTML = '';
+                data.contract_types.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type.name;
+                    option.textContent = type.name;
+                    if (type.name === 'DEPOSIT & COD') option.selected = true;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading contract types:', error));
+    
+    // Load order types
+    fetch('/api/order-types')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const select = document.getElementById('orderType');
+                select.innerHTML = '';
+                data.order_types.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type.name;
+                    option.textContent = type.name;
+                    if (type.name === 'RESIDENTIAL HOME') option.selected = true;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading order types:', error));
+}
+
+function submitManualEnquiry() {
+    const form = document.getElementById('manualEnquiryForm');
+    hideStatusMessage();
+
+    // Validate required fields
+    const postalCode = document.getElementById('postal_code').value.trim();
+    if (!postalCode) {
+        alert('Please enter a postcode');
+        document.getElementById('postal_code').focus();
+        return;
+    }
+    
+    // Validate postcode format (4 digits)
+    if (!/^\d{4}$/.test(postalCode)) {
+        alert('Please enter a valid 4-digit postcode');
+        document.getElementById('postal_code').focus();
+        return;
+    }
+    
+    const attachmentsInput = document.getElementById('attachments');
+    if (!validateAttachments(attachmentsInput)) {
+        return;
+    }
+
+    const formData = new FormData(form);
+    
+    // Add configuration settings from controls outside the form
+    formData.set('document_type', manualDocumentType || 'quotation');
+    formData.set('documentTypeSelection', manualDocumentType || 'quotation');
+    formData.set('salesperson', document.getElementById('salesperson').value);
+    formData.set('contractType', document.getElementById('contractType').value);
+    formData.set('orderType', document.getElementById('orderType').value);
+    formData.set('labourServiceType', document.getElementById('labourServiceType').value);
+    formData.set('adSource', document.getElementById('adSource').value);
+    formData.set('measureDate', document.getElementById('measureDate').value);
+    formData.set('dateStatus', document.getElementById('dateStatus').value);
+    formData.set('appointmentTime', document.getElementById('appointmentTime').value);
+    formData.set('installDate', document.getElementById('installDate').value);
+
+    // Ensure dollar value defaults to 1.00 when blank
+    if (!formData.get('dollar_value')) {
+        formData.set('dollar_value', '1.00');
+    }
+
+    // Show processing status
+    showProcessingStatus(manualDocumentType);
+    
+    fetch('/submit-manual-enquiry', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        console.log('Submit manual enquiry response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(result => {
+        console.log('Submit manual enquiry result:', result);
+        if (result.success) {
+            // Process the enquiry directly in RFMS instead of going to preview
+            // Show a message that we're processing
+            showInfoMessage('Manual enquiry created. Now processing RFMS export...');
+            setTimeout(() => {
+                processEnquiryDirectly(result.pdf_id, manualDocumentType);
+            }, 2000);
+        } else {
+            hideProcessingStatus();
+            const errorMsg = result.error || 'Failed to create manual enquiry';
+            alert(errorMsg);
+            showErrorMessage(errorMsg);
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting manual enquiry:', error);
+        hideProcessingStatus();
+        const errorMsg = 'Network error. Please try again: ' + error.message;
+        alert(errorMsg);
+        showErrorMessage(errorMsg);
+    });
+}
+
+function processEnquiryDirectly(pdfId, documentType) {
+    const docType = documentType || manualDocumentType || 'quotation';
+    const isQuote = docType === 'quotation';
+    const docLabel = isQuote ? 'Quote' : 'Sales Order';
+    
+    // Update processing status message (overlay is already showing from showProcessingStatus)
+    const processingTitle = document.getElementById('processingTitle');
+    const processingMessage = document.getElementById('processingMessage');
+    if (processingTitle) {
+        processingTitle.textContent = `Submitting ${docLabel} to RFMS...`;
+    }
+    if (processingMessage) {
+        processingMessage.textContent = 'Processing your new customer and job details now – please keep this page open until complete.';
+    }
+    
+    // Call the export endpoint to create customer and quote directly
+    fetch('/export/' + pdfId, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(result => {
+        console.log('RFMS Export Result:', result);
+        
+        // Hide processing overlay and restore form visibility
+        hideProcessingStatus();
+        
+        // Small delay to ensure DOM is updated
+        setTimeout(() => {
+            if (result.success) {
+                const status = (result.status || '').toLowerCase();
+                const docTypeResult = (result.document_type || (isQuote ? 'quote' : 'order')).toLowerCase();
+                const docLabel = docTypeResult === 'order' ? 'Sales Order' : 'Quote';
+                const docNumber = result.document_number || result.raw_document_number || '';
+                const referenceText = docNumber ? ` with reference # ${docNumber}` : '';
+
+                // Display success message - form is now visible so user can see it
+                let successMsg = '';
+                if (status === 'existing_order') {
+                    successMsg = `Customer file successfully created and attached to existing Sales Order${referenceText}.`;
+                } else if (status === 'existing_quote') {
+                    successMsg = `Customer file successfully created and attached to existing Quote${referenceText}.`;
+                } else {
+                    // Use the document type from the response to show the correct type
+                    // Plan requires: "Customer file successfully created and a new quote or sales order has been created with document number: AQ####### or AZ######"
+                    const docTypeFromResponse = result.document_type || (isQuote ? 'quote' : 'order');
+                    const isActuallyQuote = docTypeFromResponse.toLowerCase() === 'quote' || docTypeFromResponse.toLowerCase() === 'quotation';
+                    const finalDocLabel = isActuallyQuote ? 'Quote' : 'Sales Order';
+                    // Ensure we have a document number - it should be in AQ####### or AZ###### format
+                    if (!docNumber || docNumber === 'N/A') {
+                        // Try to get it from raw_document_number or rfms_result
+                        const fallbackDocNumber = result.raw_document_number || (result.rfms_result && result.rfms_result.order && result.rfms_result.order.result) || '';
+                        if (fallbackDocNumber) {
+                            successMsg = `Customer file successfully created and a new ${finalDocLabel} has been created with document number: ${fallbackDocNumber}`;
+                        } else {
+                            successMsg = `Customer file successfully created and a new ${finalDocLabel} has been created with document number: ${docNumber || 'N/A'}`;
+                        }
+                    } else {
+                        successMsg = `Customer file successfully created and a new ${finalDocLabel} has been created with document number: ${docNumber}`;
+                    }
+                }
+                
+                // Show persistent success message for 15 seconds (no close button during this time)
+                showSuccessMessage(successMsg, true, 15);
+                
+                // Also show additional info if present
+                if (result.additional_info) {
+                    setTimeout(() => {
+                        showInfoMessage(result.additional_info);
+                    }, 1000);
+                }
+                
+                // CRITICAL: Do NOT clear form automatically - user can clear it manually or navigate away
+                // Store a flag to prevent any accidental form resets
+                window.formSubmissionComplete = true;
+                window.formDataPreserved = true;
+                
+                console.log('Success! Form data preserved. Document number:', docNumber);
+                console.log('Form will NOT be cleared automatically. User must click "Clear Form" button.');
+            } else {
+                const errorMsg = 'Failed to create customer/quote in RFMS: ' + (result.error || 'Unknown error');
+                alert(errorMsg);
+                showErrorMessage(errorMsg);
+            }
+        }, 200);
+    })
+    .catch(error => {
+        console.error('Error processing enquiry:', error);
+        hideProcessingStatus();
+        const errorMsg = 'Network error while creating customer/quote. Please try again: ' + error.message;
+        alert(errorMsg);
+        showErrorMessage(errorMsg);
+    });
+}
+
+function showProcessingStatus(documentType) {
+    const docType = documentType || manualDocumentType || 'quotation';
+    const isQuote = docType === 'quotation';
+    const docLabel = isQuote ? 'Quote' : 'Sales Order';
+    
+    // Don't hide status message - we might want to show progress there
+    const processingStatus = document.getElementById('processingStatus');
+    const processingTitle = document.getElementById('processingTitle');
+    const processingMessage = document.getElementById('processingMessage');
+    
+    if (processingTitle) {
+        processingTitle.textContent = `Submitting ${docLabel} to RFMS...`;
+    }
+    if (processingMessage) {
+        processingMessage.textContent = 'Processing your new customer and job details now – please keep this page open until complete.';
+    }
+    
+    // Show processing status overlay, but DON'T hide the form
+    // This way the form data stays visible and we can show messages on it
+    if (processingStatus) {
+        processingStatus.style.display = 'block';
+        processingStatus.style.position = 'fixed';
+        processingStatus.style.top = '50%';
+        processingStatus.style.left = '50%';
+        processingStatus.style.transform = 'translate(-50%, -50%)';
+        processingStatus.style.zIndex = '9999';
+        processingStatus.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+        processingStatus.style.padding = '2rem';
+        processingStatus.style.borderRadius = '8px';
+        processingStatus.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+    }
+    
+    // Keep form visible but dimmed
+    const manualEnquiryForm = document.getElementById('manualEnquiryForm');
+    if (manualEnquiryForm) {
+        manualEnquiryForm.style.opacity = '0.5';
+        manualEnquiryForm.style.pointerEvents = 'none';
+    }
+    
+    // Simulate progress
+    let progress = 0;
+    const progressBar = document.getElementById('processingProgress');
+    const interval = setInterval(() => {
+        progress += 10;
+        if (progressBar) {
+            progressBar.style.width = progress + '%';
+        }
+        
+        if (progress >= 100) {
+            clearInterval(interval);
+        }
+    }, 200);
+}
+
+function hideProcessingStatus() {
+    const processingStatus = document.getElementById('processingStatus');
+    const manualEnquiryForm = document.getElementById('manualEnquiryForm');
+    
+    // Hide the processing overlay
+    if (processingStatus) {
+        processingStatus.style.display = 'none';
+        // Reset overlay styles
+        processingStatus.style.position = '';
+        processingStatus.style.top = '';
+        processingStatus.style.left = '';
+        processingStatus.style.transform = '';
+        processingStatus.style.zIndex = '';
+        processingStatus.style.backgroundColor = '';
+        processingStatus.style.padding = '';
+        processingStatus.style.borderRadius = '';
+        processingStatus.style.boxShadow = '';
+    }
+    
+    // Restore form to full visibility and functionality
+    if (manualEnquiryForm) {
+        manualEnquiryForm.style.opacity = '1';
+        manualEnquiryForm.style.pointerEvents = 'auto';
+        manualEnquiryForm.style.display = 'block';
+        manualEnquiryForm.style.visibility = 'visible';
+        // CRITICAL: Do NOT reset the form - preserve all data
+    }
+    
+    const progressBar = document.getElementById('processingProgress');
+    if (progressBar) {
+        progressBar.style.width = '0%';
+    }
+    
+    // Ensure the card body containing the form is visible
+    const cardBody = document.querySelector('.card-body');
+    if (cardBody) {
+        cardBody.style.display = 'block';
+        cardBody.style.visibility = 'visible';
+        cardBody.style.opacity = '1';
+    }
+}
+
+function clearForm() {
+    // Only allow clearing if user explicitly clicks the button (not automatic)
+    const form = document.getElementById('manualEnquiryForm');
+    if (!form) return;
+    
+    // Temporarily allow reset
+    window.allowFormReset = true;
+    
+    // Reset the form
+    form.reset();
+    const quoteOption = document.getElementById('documentTypeOptionQuote');
+    const orderOption = document.getElementById('documentTypeOptionOrder');
+    manualDocumentType = 'quotation';
+    if (quoteOption && orderOption) {
+        quoteOption.classList.add('active');
+        orderOption.classList.remove('active');
+    }
+    updateDocumentTypeToggleUI();
+    updateSubmitButtonLabel();
+    resetAttachmentPreview();
+    hideStatusMessage();
+    
+    // Reset flags
+    window.formSubmissionComplete = false;
+    window.formDataPreserved = false;
+    window.allowFormReset = false;
+    
+    console.log('Form cleared by user action');
+}
+
+
+function saveDraft() {
+    // Save form data to localStorage as draft
+    const form = document.getElementById('manualEnquiryForm');
+    const formData = new FormData(form);
+    const data = {};
+    for (let [key, value] of formData.entries()) {
+        if (key === 'attachments') {
+            continue; // Do not persist attachments in drafts
+        }
+        data[key] = value;
+    }
+    data['documentTypeSelection'] = manualDocumentType || 'quotation';
+    
+    localStorage.setItem('manualEnquiryDraft', JSON.stringify(data));
+    showInfoMessage('Draft saved! You can continue later.');
+}
+
+// Load draft on page load
+function loadDraft() {
+    const draft = localStorage.getItem('manualEnquiryDraft');
+    if (draft) {
+        const data = JSON.parse(draft);
+        Object.keys(data).forEach(key => {
+            const element = document.getElementById(key);
+            if (element) {
+                element.value = data[key];
+            }
+        });
+        const quoteOption = document.getElementById('documentTypeOptionQuote');
+        const orderOption = document.getElementById('documentTypeOptionOrder');
+        manualDocumentType = data['documentTypeSelection'] || 'quotation';
+        if (quoteOption && orderOption) {
+            quoteOption.classList.toggle('active', manualDocumentType === 'quotation');
+            orderOption.classList.toggle('active', manualDocumentType === 'purchase_order');
+        }
+        updateDocumentTypeToggleUI();
+        updateSubmitButtonLabel();
+    }
+}
+
+function validateAttachments(input) {
+    if (!input || !input.files || input.files.length === 0) {
+        return true;
+    }
+    const allowedExtensions = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'heic', 'heif'];
+    const maxFileSize = 16 * 1024 * 1024; // 16MB
+    for (const file of input.files) {
+        const extension = file.name.split('.').pop().toLowerCase();
+        if (!allowedExtensions.includes(extension)) {
+            alert(`Unsupported file type: ${file.name}. Allowed types are PDF, DOC, DOCX, JPG, JPEG, PNG, HEIC.`);
+            return false;
+        }
+        if (file.size > maxFileSize) {
+            alert(`The file ${file.name} exceeds the 16MB limit.`);
+            return false;
+        }
+    }
+    return true;
+}
+
+function updateAttachmentPreview() {
+    const input = document.getElementById('attachments');
+    const preview = document.getElementById('attachmentPreview');
+    if (!input || !preview) return;
+
+    preview.innerHTML = '';
+    if (!input.files || input.files.length === 0) {
+        preview.innerHTML = '<div class="list-group-item text-muted">No files selected</div>';
+        return;
+    }
+
+    Array.from(input.files).forEach(file => {
+        const item = document.createElement('div');
+        item.className = 'list-group-item d-flex justify-content-between align-items-center';
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'text-truncate';
+        nameSpan.style.maxWidth = '70%';
+        nameSpan.textContent = file.name;
+
+        const sizeSpan = document.createElement('span');
+        sizeSpan.className = 'badge bg-light text-dark';
+        const sizeInMb = file.size / (1024 * 1024);
+        sizeSpan.textContent = `${sizeInMb.toFixed(2)} MB`;
+
+        item.appendChild(nameSpan);
+        item.appendChild(sizeSpan);
+        preview.appendChild(item);
+    });
+}
+
+function resetAttachmentPreview() {
+    const input = document.getElementById('attachments');
+    if (input) {
+        input.value = '';
+    }
+    const preview = document.getElementById('attachmentPreview');
+    if (preview) {
+        preview.innerHTML = '<div class="list-group-item text-muted">No files selected</div>';
+    }
+}
+</script>
+{% endblock %}

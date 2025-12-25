@@ -1,0 +1,458 @@
+{% extends "base.html" %}
+
+{% block title %}RFMS Uploader - Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="display-4 mb-0">RFMS Uploader Dashboard</h1>
+            <a href="/manual-enquiry" class="btn btn-primary btn-lg">
+                <i class="fas fa-phone"></i> New Enquiry Entry
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration Dropdowns -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-cog"></i> Configuration Settings</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="documentType" class="form-label"><strong>Document type to create</strong></label>
+                        <select class="form-select" id="documentType" name="document_type" required>
+                            <option value="" selected disabled>-- Select Document Type --</option>
+                            <option value="purchase_order">PO PDF to Order</option>
+                            <option value="quotation">PO PDF to Quote</option>
+                            <option value="customer_enquiry">Cust. ENQ FRM to Quote</option>
+                            <option value="email_quotation">Email MSG to Quote</option>
+                            <option value="email_order">Email MSG to Order</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="salesperson" class="form-label"><strong>Salesperson</strong></label>
+                            <select class="form-select" id="salesperson" name="salesperson">
+                                <option value="ZORAN VEKIC">ZORAN VEKIC</option>
+                                <option value="STEVE WHYTE" selected>STEVE WHYTE</option>
+                                <option value="ADRIAN SIMPSON">ADRIAN SIMPSON</option>
+                                <option value="EMILY VEKIC">EMILY VEKIC</option>
+                                <option value="SHAR VEKIC">SHAR VEKIC</option>
+                            </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="contractType" class="form-label"><strong>Contract Type</strong></label>
+                        <select class="form-select" id="contractType" name="contractType">
+                            <option value="DEPOSIT & COD" selected>DEPOSIT & COD</option>
+                            <option value="30 DAY ACCOUNT">30 DAY ACCOUNT</option>
+                            <option value="14 DAY ACCOUNT">14 DAY ACCOUNT</option>
+                            <option value="7 DAY ACCOUNT">7 DAY ACCOUNT</option>
+                            <option value="COD ACCOUNT">COD ACCOUNT</option>
+                            <option value="CREDIT CLAIM/REFUND">CREDIT CLAIM/REFUND</option>
+                            <option value="PAID IN FULL">PAID IN FULL</option>
+                            <option value="REPAYMENT PLAN">REPAYMENT PLAN</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="orderType" class="form-label"><strong>Order Type</strong></label>
+                        <select class="form-select" id="orderType" name="orderType">
+                            <option value="RESIDENTIAL HOME" selected>RESIDENTIAL HOME</option>
+                            <option value="RESIDENTIAL INSURANCE">RESIDENTIAL INSURANCE</option>
+                            <option value="BUILDER CLIENT ADD ON">BUILDER CLIENT ADD ON</option>
+                            <option value="COMMERCIAL OFFICE">COMMERCIAL OFFICE</option>
+                            <option value="COMMERCIAL RETAIL">COMMERCIAL RETAIL</option>
+                            <option value="COMMERCIAL RESIDENTIAL">COMMERCIAL RESIDENTIAL</option>
+                            <option value="CREDIT CLAIM/REFUND">CREDIT CLAIM/REFUND</option>
+                            <option value="GOOD WILL">GOOD WILL</option>
+                            <option value="INSTALLER REPLACEMENT">INSTALLER REPLACEMENT</option>
+                            <option value="INSTALLER S/O PURCHASE">INSTALLER S/O PURCHASE</option>
+                            <option value="MANUFACTURER REPLACEMENT">MANUFACTURER REPLACEMENT</option>
+                            <option value="NEW BUILD">NEW BUILD</option>
+                            <option value="ONLINE SEBO SALE">ONLINE SEBO SALE</option>
+                            <option value="RESIDENTIAL RENTAL">RESIDENTIAL RENTAL</option>
+                            <option value="RESIDENTIAL TOWNHOUSE">RESIDENTIAL TOWNHOUSE</option>
+                            <option value="RESIDENTIAL UNIT">RESIDENTIAL UNIT</option>
+                            <option value="RETURN TO MANUFACTURER">RETURN TO MANUFACTURER</option>
+                            <option value="SHORT MEASURE">SHORT MEASURE</option>
+                            <option value="SHORT SUPPLIED">SHORT SUPPLIED</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="adSource" class="form-label"><strong>Ad Source</strong></label>
+                        <select class="form-select" id="adSource" name="adSource">
+                            <option value="BUILDER CLIENT" selected>BUILDER CLIENT</option>
+                            <option value="BUILDER REFERRAL">BUILDER REFERRAL</option>
+                            <option value="CLIENT REFERRAL">CLIENT REFERRAL</option>
+                            <option value="COMMUNITY LEADER ADV">COMMUNITY LEADER ADV</option>
+                            <option value="ESTIMATE ONE TENDER">ESTIMATE ONE TENDER</option>
+                            <option value="EXISTING CLIENT">EXISTING CLIENT</option>
+                            <option value="FACEBOOK ENQUIRY">FACEBOOK ENQUIRY</option>
+                            <option value="FAMILY REFERRAL">FAMILY REFERRAL</option>
+                            <option value="GOOGLE ENQUIRY">GOOGLE ENQUIRY</option>
+                            <option value="INSPIRATIONS PAINT REFERRAL">INSPIRATIONS PAINT REFERRAL</option>
+                            <option value="INSTALLER BUSINESS">INSTALLER BUSINESS</option>
+                            <option value="INSTALLER REFERRAL">INSTALLER REFERRAL</option>
+                            <option value="KITCHEN CONNECTIONS">KITCHEN CONNECTIONS</option>
+                            <option value="MARKET PLACE ENQUIRY">MARKET PLACE ENQUIRY</option>
+                            <option value="PHONE ENQUIRY">PHONE ENQUIRY</option>
+                            <option value="SHOWROOM WALK IN">SHOWROOM WALK IN</option>
+                            <option value="SUPERVISOR/INSTALLER">SUPERVISOR/INSTALLER</option>
+                            <option value="WEBSITE ENQUIRY">WEBSITE ENQUIRY</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="labourServiceType" class="form-label"><strong>Labour/Service Type</strong></label>
+                        <select class="form-select" id="labourServiceType" name="labourServiceType">
+                            <option value="SUPPLY & INSTALL" selected>SUPPLY & INSTALL</option>
+                            <option value="MIXED SERVICES">MIXED SERVICES</option>
+                            <option value="FLOOR PREPARATION">FLOOR PREPARATION</option>
+                            <option value="GENERAL LABOUR">GENERAL LABOUR</option>
+                            <option value="INSTALLATION">INSTALLATION</option>
+                            <option value="MIN. CALL OUT CHARGE">MIN. CALL OUT CHARGE</option>
+                            <option value="PRODUCT ONLY RETURN">PRODUCT ONLY RETURN</option>
+                            <option value="PRODUCT REPAIRS">PRODUCT REPAIRS</option>
+                            <option value="SUPPLY ONLY">SUPPLY ONLY</option>
+                            <option value="UPLIFT ONLY">UPLIFT ONLY</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="dateType" class="form-label"><strong>Installation Status</strong></label>
+                        <select class="form-select" id="dateType" name="dateType" style="font-size: 0.9em;">
+                            <option value="estimated" selected>Estimated</option>
+                            <option value="scheduled">Scheduled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="requiredDate" class="form-label"><strong>Estimated Required Date</strong></label>
+                        <input type="date" class="form-control" id="requiredDate" name="requiredDate">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div id="statusAlert" class="alert d-none" role="alert"></div>
+                <form action="{{ url_for('upload_pdf') }}" method="post" enctype="multipart/form-data" id="uploadForm">
+                    <!-- Hidden inputs to pass configuration values -->
+                    <input type="hidden" id="hiddenDocumentType" name="document_type">
+                    <input type="hidden" id="hiddenSalesperson" name="salesperson">
+                    <input type="hidden" id="hiddenContractType" name="contractType">
+                    <input type="hidden" id="hiddenOrderType" name="orderType">
+                    <input type="hidden" id="hiddenAdSource" name="adSource">
+                    <input type="hidden" id="hiddenDateType" name="dateType">
+                    <input type="hidden" id="hiddenRequiredDate" name="requiredDate">
+                    <input type="hidden" id="hiddenLabourServiceType" name="labourServiceType">
+                    <div class="upload-area" id="dropZone">
+                        <div id="uploadContent">
+                            <p class="lead mb-2">Drag and drop</p>
+                            <h3 class="mb-3">Upload here</h3>
+                            <p class="mb-4">a PDF, JPEG image, or a full email (.MSG) (including any attachments that come with it)</p>
+                            <input type="file" name="pdf_file" id="fileInput" class="d-none" accept=".pdf,.jpg,.jpeg,.png,.msg">
+                            <button type="button" class="btn btn-primary btn-lg" onclick="document.getElementById('fileInput').click()">
+                                Choose File
+                            </button>
+                        </div>
+                        <div id="uploadLoading" style="display: none;">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <h4>Processing File...</h4>
+                            <p class="text-muted" id="processingStatus">Uploading file...</p>
+                            <div class="progress mb-3">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" id="processingProgress"></div>
+                            </div>
+                            <div class="alert alert-info" id="processingSteps">
+                                <small>
+                                    <i class="fas fa-check text-success" id="step-upload" style="display: none;"></i>
+                                    <i class="fas fa-spinner fa-spin text-primary" id="step-upload-spinner"></i>
+                                    <span id="step-upload-text">Uploading file...</span><br>
+                                    <i class="fas fa-clock text-muted" id="step-ai" style="display: none;"></i>
+                                    <span id="step-ai-text" class="text-muted">AI Analysis...</span><br>
+                                    <i class="fas fa-clock text-muted" id="step-extract" style="display: none;"></i>
+                                    <span id="step-extract-text" class="text-muted">Data Extraction...</span><br>
+                                    <i class="fas fa-clock text-muted" id="step-complete" style="display: none;"></i>
+                                    <span id="step-complete-text" class="text-muted">Finalizing...</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function hideStatusMessage() {
+    const alertBox = document.getElementById('statusAlert');
+    if (!alertBox) return;
+    alertBox.className = 'alert d-none';
+    alertBox.textContent = '';
+}
+
+function displayStatusMessage(message, type) {
+    const alertBox = document.getElementById('statusAlert');
+    if (!alertBox) return;
+    alertBox.className = `alert alert-${type}`;
+    alertBox.textContent = message;
+    alertBox.classList.remove('d-none');
+}
+
+function showSuccessMessage(message) {
+    displayStatusMessage(message, 'success');
+}
+
+function showErrorMessage(message) {
+    displayStatusMessage(message, 'danger');
+}
+
+function showInfoMessage(message) {
+    displayStatusMessage(message, 'info');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const uploadForm = document.getElementById('uploadForm');
+    const documentType = document.getElementById('documentType');
+
+    hideStatusMessage();
+
+    // Handle file selection
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            if (validateDocumentType()) {
+                showLoadingState();
+                uploadForm.submit();
+            }
+        }
+    });
+
+    // Handle drag and drop
+    dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('border-primary');
+    });
+
+    dropZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.classList.remove('border-primary');
+    });
+
+    dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('border-primary');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            if (validateDocumentType()) {
+                showLoadingState();
+                uploadForm.submit();
+            }
+        }
+    });
+
+    // Validate document type selection
+    function validateDocumentType() {
+        const documentType = document.getElementById('documentType');
+        if (!documentType.value) {
+            showErrorMessage('Please select a document type before uploading.');
+            documentType.focus();
+            return false;
+        }
+        hideStatusMessage();
+        return true;
+    }
+
+    // Function to show loading state
+    function showLoadingState() {
+        // Populate hidden fields with configuration values
+        document.getElementById('hiddenDocumentType').value = document.getElementById('documentType').value;
+        document.getElementById('hiddenSalesperson').value = document.getElementById('salesperson').value;
+        document.getElementById('hiddenContractType').value = document.getElementById('contractType').value;
+        document.getElementById('hiddenOrderType').value = document.getElementById('orderType').value;
+        document.getElementById('hiddenAdSource').value = document.getElementById('adSource').value;
+        document.getElementById('hiddenDateType').value = document.getElementById('dateType').value;
+        document.getElementById('hiddenRequiredDate').value = document.getElementById('requiredDate').value;
+        document.getElementById('hiddenLabourServiceType').value = document.getElementById('labourServiceType').value;
+        
+        showInfoMessage('Uploading file to RFMS Uploader… please keep this page open until processing completes.');
+
+        document.getElementById('uploadContent').style.display = 'none';
+        document.getElementById('uploadLoading').style.display = 'block';
+        document.getElementById('dropZone').classList.add('border-primary', 'border-2');
+        
+        // Start processing animation
+        simulateProcessingSteps();
+    }
+    
+    // Function to simulate processing steps
+    function simulateProcessingSteps() {
+        const steps = [
+            { id: 'step-upload', text: 'Uploading file...', progress: 25 },
+            { id: 'step-ai', text: 'AI Analysis...', progress: 50 },
+            { id: 'step-extract', text: 'Data Extraction...', progress: 75 },
+            { id: 'step-complete', text: 'Finalizing...', progress: 100 }
+        ];
+        
+        let currentStep = 0;
+        
+        function nextStep() {
+            if (currentStep < steps.length) {
+                const step = steps[currentStep];
+                
+                // Update progress bar
+                document.getElementById('processingProgress').style.width = step.progress + '%';
+                document.getElementById('processingStatus').textContent = step.text;
+                
+                // Update step indicators
+                if (currentStep > 0) {
+                    const prevStep = steps[currentStep - 1];
+                    document.getElementById(prevStep.id).style.display = 'none';
+                    document.getElementById(prevStep.id + '-spinner').style.display = 'none';
+                    document.getElementById(prevStep.id + '-text').classList.add('text-success');
+                }
+                
+                document.getElementById(step.id).style.display = 'inline';
+                document.getElementById(step.id + '-text').classList.remove('text-muted');
+                document.getElementById(step.id + '-text').classList.add('text-primary');
+                
+                currentStep++;
+                setTimeout(nextStep, 2000); // 2 seconds per step
+            }
+        }
+        
+        nextStep();
+    }
+    
+    // Check RFMS status on page load
+    checkRFMSStatus();
+    
+    // Load dropdown data on page load
+    loadDropdownData();
+    
+    // Check RFMS status every 5 minutes (reduced from 30 seconds to reduce server load)
+    setInterval(checkRFMSStatus, 300000); // 5 minutes = 300000ms
+});
+
+// Function to check RFMS status
+function checkRFMSStatus() {
+    fetch('/api/rfms-status')
+        .then(response => response.json())
+        .then(data => {
+            const statusIcon = document.getElementById('rfms-status');
+            const statusText = document.getElementById('rfms-status-text');
+            
+            if (data.online) {
+                statusIcon.style.color = '#28a745';
+                statusText.textContent = 'RFMS Online';
+            } else {
+                statusIcon.style.color = '#dc3545';
+                statusText.textContent = 'RFMS Offline';
+            }
+        })
+        .catch(error => {
+            console.error('Error checking RFMS status:', error);
+            const statusIcon = document.getElementById('rfms-status');
+            const statusText = document.getElementById('rfms-status-text');
+            statusIcon.style.color = '#dc3545';
+            statusText.textContent = 'RFMS Offline';
+        });
+}
+
+// Function to load dropdown data from APIs
+function loadDropdownData() {
+    // Load salespersons
+    fetch('/api/salespersons')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const select = document.getElementById('salesperson');
+                select.innerHTML = '';
+                data.salespersons.forEach(person => {
+                    const option = document.createElement('option');
+                    option.value = person.id;
+                    option.textContent = person.name;
+                    if (person.id === 'ZORAN VEKIC') option.selected = true;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading salespersons:', error));
+    
+    // Load contract types
+    fetch('/api/contract-types')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const select = document.getElementById('contractType');
+                select.innerHTML = '';
+                data.contract_types.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type.id;
+                    option.textContent = type.name;
+                    if (type.id === '30 DAY ACCOUNT') option.selected = true;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading contract types:', error));
+    
+    // Load order types
+    fetch('/api/order-types')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const select = document.getElementById('orderType');
+                select.innerHTML = '';
+                data.order_types.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type.id;
+                    option.textContent = type.name;
+                    if (type.id === 'RESIDENTIAL INSURANCE') option.selected = true;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading order types:', error));
+    
+    // Load ad sources
+    fetch('/api/ad-sources')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const select = document.getElementById('adSource');
+                select.innerHTML = '';
+                data.ad_sources.forEach(source => {
+                    const option = document.createElement('option');
+                    option.value = source.id;
+                    option.textContent = source.name;
+                    if (source.id === 'BUILDER CLIENT') option.selected = true;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading ad sources:', error));
+    
+    // Set default date to Christmas Day of current year
+    const currentYear = new Date().getFullYear();
+    const christmasDay = `${currentYear}-12-25`;
+    document.getElementById('requiredDate').value = christmasDay;
+}
+
+</script>
+{% endblock %} 

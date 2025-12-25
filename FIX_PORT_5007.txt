@@ -1,0 +1,29 @@
+==========================================
+FIX: Port 5007 Already Allocated
+==========================================
+
+The port is already in use. Stop everything first:
+
+ssh atoz@AtozServer "cd /volume1/docker/rfms-uploader && docker compose down && docker stop rfms-uploader 2>/dev/null || true && docker rm rfms-uploader 2>/dev/null || true && docker compose build --no-cache && docker compose up -d"
+
+Or use the script:
+.\rebuild-container-fixed.ps1
+
+==========================================
+Step by step:
+==========================================
+
+1. Stop and remove containers:
+   ssh atoz@AtozServer "cd /volume1/docker/rfms-uploader && docker compose down"
+
+2. Force remove if still running:
+   ssh atoz@AtozServer "docker stop rfms-uploader; docker rm rfms-uploader"
+
+3. Rebuild:
+   ssh atoz@AtozServer "cd /volume1/docker/rfms-uploader && docker compose build --no-cache"
+
+4. Start:
+   ssh atoz@AtozServer "cd /volume1/docker/rfms-uploader && docker compose up -d"
+
+==========================================
+

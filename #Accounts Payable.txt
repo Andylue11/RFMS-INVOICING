@@ -1,0 +1,160 @@
+#Accounts Payable
+#The methods in this section require the "Plus" level of the API product.  Requests from "Standard" API accounts will return Unauthorized.
+Authorization
+Basic Auth
+#This folder is using an authorization helper from collection RFMS API 2
+POST
+Record Payables
+https://api.rfms.online/v2/payables
+#This method requires the "Plus" level of the API product at a minimum.
+#Use this method to create one or more payables in RFMS.  Call this method with an array of payables.  The combination of supplierName and invoiceNumber must be unique for each.  
+#Payable properties
+
+﻿Payable properties
+
+refer to table
+
+comment
+
+Comment
+Property	Field in RFMS
+supplierName
+Supplier (who the bill is from)
+invoiceNumber
+Invoice # (the Supplier's invoice number)
+invoiceDate
+Invoice Date
+dueDate
+Due Date
+discountableAmount
+Discountable
+nonDiscountableAmount
+Non Discountable
+discountRate
+Disc Rate
+linkedDocumentNumber
+﻿
+internalNotes
+A/P Internal Notes
+remittanceAdviceNotes
+A/P Remittance Advice Notes
+detailLines
+List of details
+Each detail line can have these properties:
+
+Property	Field in RFMS
+storeNumber
+Store (note that you must supply the Store number (1), not the Store display code (" ")
+accountCode
+Account Code
+subAccountCode
+Sub Code
+amount
+Amount
+comment
+Comment
+Authorization
+Basic Auth
+This request is using an authorization helper from collection RFMS API 2
+Body
+raw (json)
+[
+  {
+    "supplierName": "mjs sturgess",
+    "invoiceNumber": "PSI888338",
+    "invoiceDate": "9/24/19",
+    "dueDate": "10/24/19",
+    "discountableAmount": 0,
+    "nonDiscountableAmount": 497.92, #invoice total including GST
+    "discountRate": 0.0,
+    "linkedDocumentNumber": "", #linked AZ... product order nunbers "document number"
+    "internalNotes ": "Internal note",
+    "remittanceAdviceNotes": "Remit note",
+    "detailLines": [
+      {
+        "storeNumber": 49,
+        "accountCode": "1630", #RFMS Cost of goods sold account code
+        "subAccountCode": "10", #product catergory code
+        "amount": 44.83, #value of this catergory inventory product being receive which is an ex gst amoun
+        "comment": "detail line"
+        "gstCode": "GST"
+      }
+      {
+        "storeNumber": 49,
+        "accountCode": "1630", #RFMS Cost of goods sold account code
+        "subAccountCode": "11", #product catergory code
+        "amount": 337.82, #value of different catergory inventory product being receive which is an ex gst amount
+        "comment": "detail line"
+        "gstCode": "GST"
+      }
+      {
+        "storeNumber": 49,
+        "accountCode": "6406", #RFMS Baling & Handling cost account code
+        "subAccountCode": "00", #no sub account for baling & Handling
+        "amount": 50.00, #Bailing & Handling dollar value the supplier charged which is an ex gst amount
+        "comment": "detail line"
+        "gstCode": "GST"
+      }
+      {
+        "storeNumber": 49,
+        "accountCode": "5315", #RFMS Freight cost account code
+        "subAccountCode": "00", #no sub account for Freight
+        "amount": 20.00 #Freight dollar value the supplier charged which is an ex gst amount
+        "comment": "detail line"
+        "gstCode": "GST"
+      }
+      {
+        "storeNumber": 49,
+        "accountCode": "2820", #RFMS GST Payable account code
+        "subAccountCode": "00", #no sub account for GST
+        "amount": 45.27, #GST payable listed on invoice
+        "comment": "detail line"
+        "gstCode": "TAXPD"
+      }
+    ]
+  }
+]
+example 
+request
+import requests
+import json
+
+url = "https://api.rfms.online/v2/payables"
+
+payload = json.dumps([
+  {
+    "supplierName": "ACME",
+    "invoiceNumber": "XS101",
+    "invoiceDate": "9/24/19",
+    "dueDate": "10/24/19",
+    "discountableAmount": 0,
+    "nonDiscountableAmount": 90,
+    "discountRate": 0.1,
+    "linkedDocumentNumber": "",
+    "internalNotes ": "Internal note",
+    "remittanceAdviceNotes": "Remit note",
+    "detailLines": [
+      {
+        "storeNumber": 1,
+        "accountCode": "1630",
+        "subAccountCode": "",
+        "amount": 100,
+        "comment": "detail line"
+      }
+    ]
+  }
+])
+headers = {
+  'Content-Type': 'application/json'
+}
+
+response = requests.request("POST", url, headers=headers, data=payload)
+
+print(response.text)
+Response
+Body
+{
+    "status": "success",
+    "result": "ACME - XS101 Added",
+    "detail": null
+}

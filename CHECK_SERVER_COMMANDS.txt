@@ -1,0 +1,37 @@
+==========================================
+Quick Server Status Check Commands
+==========================================
+
+1. Check Container Status:
+   ssh atoz@AtozServer 'cd /volume1/docker/rfms-uploader && docker-compose ps'
+
+2. Check Recent Logs:
+   ssh atoz@AtozServer 'cd /volume1/docker/rfms-uploader && docker-compose logs --tail=50'
+
+3. Check Git Status:
+   ssh atoz@AtozServer 'cd /volume1/docker/rfms-uploader && git status && git log -1 --oneline'
+
+4. Check if App is Running:
+   ssh atoz@AtozServer 'curl -s http://localhost:5007 | head -20'
+
+5. Full Status Check:
+   ./check-server-status.sh
+
+==========================================
+What to Look For:
+==========================================
+
+✅ Good Signs:
+- Container status shows "Up" or "running"
+- Logs show "Running on http://0.0.0.0:5007"
+- No error messages in logs
+- Git shows "On branch main" and is up to date
+
+⚠️  Issues:
+- Container status shows "Exited" or "Restarting"
+- Error messages in logs
+- Port 5007 not accessible
+- Git shows uncommitted changes or behind origin
+
+==========================================
+

@@ -1,0 +1,77 @@
+# Manual Setup Commands for Synology NAS
+# Copy and paste these commands into an SSH session with your NAS
+
+#########################################
+# STEP 1: Navigate to the application directory
+#########################################
+cd /volume1/docker/pdf-extractor
+
+#########################################
+# STEP 2: Create the setup script
+#########################################
+cat > setup-now.sh << 'EOFSCRIPT'
+#!/bin/bash
+
+echo "=========================================="
+echo "PDF Extractor Quick Setup"
+echo "=========================================="
+
+cd /volume1/docker/pdf-extractor || exit 1
+
+echo "Checking Docker..."
+if ! command -v docker &> /dev/null; then
+    echo "❌ Docker not installed"
+    exit 1
+fi
+
+echo "✅ Docker found"
+
+echo ""
+echo "Making scripts executable..."
+chmod +x *.sh 2>/dev/null || true
+
+echo ""
+echo "Creating directories..."
+mkdir -p instance uploads logs static
+chmod 755 instance uploads logs static
+
+echo ""
+echo "Building Docker image..."
+docker-compose build
+
+echo ""
+echo "Starting application..."
+docker-compose up -d
+
+echo ""
+echo "⏳ Waiting for application to start..."
+sleep 20
+
+if docker ps | grep -q pdf-extractor; then
+    echo ""
+    echo "🎉 SUCCESS! PDF Extractor is running!"
+    echo ""
+    echo "Application URL: http://192.168.0.201:5000"
+else
+    echo "❌ Failed to start"
+fi
+
+EOFSCRIPT
+
+#########################################
+# STEP 3: Make it executable and run it
+#########################################
+chmod +x setup-now.sh
+
+#########################################
+# STEP 4: Run the setup
+#########################################
+bash setup-now.sh
+
+#########################################
+# STEP 5: Check status (optional)
+#########################################
+echo ""
+echo "Checking status..."
+docker ps | grep pdf-extractor
+docker-compose logs --tail=20

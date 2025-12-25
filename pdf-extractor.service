@@ -1,0 +1,16 @@
+[Unit]
+Description=PDF Extractor Flask Application
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/pdf-extractor
+Environment=PATH=/opt/pdf-extractor/venv/bin
+ExecStart=/opt/pdf-extractor/venv/bin/python app.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  pdf-extractor:
+    build: .
+    container_name: pdf-extractor-local
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./instance:/app/instance
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./static:/app/static
+      - ./data:/app/data
+    environment:
+      - FLASK_ENV=development
+      - HOST=0.0.0.0
+      - SECRET_KEY=local-development-secret-key
+    restart: unless-stopped
+    networks:
+      - pdf-extractor-network
+
+networks:
+  pdf-extractor-network:
+    driver: bridge
+

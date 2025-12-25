@@ -1,0 +1,16 @@
+Run these commands to update your server:
+
+1. SSH into NAS:
+   ssh atoz@192.168.0.201
+
+2. Once logged in, run:
+   cd /volume1/docker/pdf-extractor
+   rm -f setup-git-nas-token.sh setup-git-nas.sh setup-ssh-nas.sh fix-ssh-directory.sh
+   export HOME=/volume1/docker/pdf-extractor
+   /bin/git pull origin main
+   docker compose down
+   docker rmi pdf-extractor-pdf-extractor 2>/dev/null || true
+   docker compose build --no-cache
+   docker compose up -d
+   docker compose ps
+

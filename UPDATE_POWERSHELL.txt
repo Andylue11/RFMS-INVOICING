@@ -1,0 +1,18 @@
+==========================================
+POWERSHELL UPDATE COMMAND
+==========================================
+
+Option 1: Run the PowerShell script
+   .\update-server-now.ps1
+
+Option 2: Run this command directly in PowerShell:
+
+$cmd = 'cd /volume1/docker/rfms-uploader && mkdir -p ~/.ssh && chmod 700 ~/.ssh && ssh-keyscan -t rsa,ecdsa,ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null && chmod 600 ~/.ssh/known_hosts && git remote set-url origin git@github.com:Andylue11/RFMS-UPLOADER.git && git fetch origin && git checkout main && git pull origin main && docker-compose down && docker-compose build --no-cache && docker-compose up -d && sleep 10 && docker-compose ps && docker-compose logs --tail=30'
+ssh atoz@AtozServer $cmd
+
+Option 3: Use single quotes and escape properly:
+
+ssh atoz@AtozServer 'cd /volume1/docker/rfms-uploader && mkdir -p ~/.ssh && chmod 700 ~/.ssh && ssh-keyscan -t rsa,ecdsa,ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null && chmod 600 ~/.ssh/known_hosts && git remote set-url origin git@github.com:Andylue11/RFMS-UPLOADER.git && git fetch origin && git checkout main && git pull origin main && docker-compose down && docker-compose build --no-cache && docker-compose up -d && sleep 10 && docker-compose ps && docker-compose logs --tail=30'
+
+==========================================
+

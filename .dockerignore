@@ -1,0 +1,79 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+app.log
+
+# Database files (should use volumes)
+*.db
+*.sqlite
+*.sqlite3
+instance/*.db
+
+# Uploads (should use volumes)
+uploads/
+*.pdf
+*.jpg
+*.jpeg
+*.png
+*.msg
+
+# Documentation
+*.md
+!README.md
+
+# Test files
+test_*.py
+*_test.py
+tests/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Deployment scripts (not needed in container)
+*.sh
+*.bat
+*.ps1
+setup*.sh
+deploy*.sh
+*.exp
+
+# Configuration files that shouldn't be in image
+.env.local
+.env.*.local
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Workspace files
+*.code-workspace
+

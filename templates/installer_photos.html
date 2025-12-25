@@ -1,0 +1,1496 @@
+{% extends "base.html" %}
+
+{% block title %}Get Order Attachments{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="display-4 mb-0">Get Order Attachments</h1>
+            <a href="/" class="btn btn-primary btn-lg">
+                <i class="fas fa-home"></i> Home
+            </a>
+        </div>
+        <p class="text-muted">Enter an order number or select a date range to retrieve attachments and create compressed PDFs of installer photos.</p>
+    </div>
+</div>
+
+<!-- Search Cards and Order Details Row -->
+<div class="row mb-4">
+    <!-- Left Side: Search Cards -->
+    <div class="col-md-5">
+        <!-- Single Order Number Section -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Single Order Number</h5>
+                <div class="input-group" style="align-items: center;">
+                    <span class="input-group-text" style="font-size: 1.5rem; font-weight: bold; background-color: #f8f9fa; border-right: none; padding: 0.75rem 0.5rem;">AZ</span>
+                    <input type="text" class="form-control" id="orderNumber" placeholder="Enter numbers only (e.g., 003425)" autocomplete="off" style="font-size: 1.25rem; border-left: none; padding-left: 0.5rem;">
+                    <button class="btn btn-primary" type="button" id="fetchBtn">
+                        <i class="fas fa-search"></i> Fetch Attachments
+                    </button>
+                </div>
+                <small class="text-muted mt-1 d-block">
+                    <i class="fas fa-info-circle"></i> Enter only the numbers (e.g., 003425). The "AZ" prefix is added automatically.
+                </small>
+                <div id="orderError" class="text-danger mt-2" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Date Range Section -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Create Installer Photo PDF's from Schedule Pro Date Range</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <label for="startDate" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="startDate">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="endDate" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="endDate">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button class="btn btn-primary w-100" type="button" id="fetchScheduledJobsBtn">
+                            <i class="fas fa-calendar"></i> Fetch Scheduled Jobs
+                        </button>
+                    </div>
+                </div>
+                <div id="scheduleError" class="text-danger mt-2" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Create PDF Card -->
+        <div class="card mb-4" id="createPdfCard" style="display: none;">
+            <div class="card-body">
+                <button id="createPdfBtn" class="btn btn-success w-100" onclick="createPdf()">
+                    <i class="fas fa-file-pdf"></i> Create Installer Photo PDF
+                </button>
+                <div class="mt-2 text-center">
+                    <small class="text-muted">Selected: <span id="selectedCount">0</span> | Max. 12 Photos per Download</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Indicator (positioned below Create PDF card, left side only) -->
+        <div id="loadingIndicator" class="text-center mb-4" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Processing...</p>
+        </div>
+    </div>
+
+    <!-- Right Side: Order Details Card -->
+    <div class="col-md-7">
+        <div class="card h-100" id="orderDetailsCard" style="display: none; min-height: 100%;">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-file-invoice"></i> Order Details</h5>
+            </div>
+            <div class="card-body">
+                <div id="orderDetails">
+                    <!-- Order details will be displayed here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Attachments Section (Full Width) -->
+<div id="attachmentsSection" class="row mb-4" style="display: none;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Displayed Attachments</h5>
+            </div>
+            <div class="card-body">
+                <div id="attachmentStats" style="display: none;"></div>
+                <div id="attachmentsList" class="row">
+                    <!-- Attachments will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scheduled Jobs Calendar View -->
+<div id="scheduledJobsSection" class="row mb-4" style="display: none;">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Scheduled Jobs</h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary me-2" id="scheduleSelectAllBtn">
+                        <i class="fas fa-check-square"></i> Select All
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary me-2" id="scheduleSelectWithPoBtn">
+                        <i class="fas fa-file-invoice"></i> Select Orders with PO Only
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary me-2" id="scheduleSelectInstallerPhotosBtn">
+                        <i class="fas fa-camera"></i> Select Installer Photos Only
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" id="scheduleDeselectAllBtn">
+                        <i class="fas fa-square"></i> Deselect All
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="scheduleStats" class="alert alert-info mb-3"></div>
+                <div id="calendarGrid" class="schedule-calendar">
+                    <!-- Calendar grid will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Section for Single Order (Error/Success Messages) -->
+<div id="exportSection" class="row mb-4" style="display: none;">
+    <div class="col-md-12">
+        <div id="exportError" class="text-danger mt-2" style="display: none;"></div>
+        <div id="exportSuccess" class="text-success mt-2" style="display: none;"></div>
+    </div>
+</div>
+
+<!-- Export Section for Multiple Orders -->
+<div id="multiExportSection" class="row mb-4" style="display: none;">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <button class="btn btn-success btn-lg w-100" id="createMultiplePdfsBtn">
+                    <i class="fas fa-file-pdf"></i> Create Compressed PDFs for Selected Orders
+                </button>
+                <div id="multiExportError" class="text-danger mt-2" style="display: none;"></div>
+                <div id="multiExportSuccess" class="text-success mt-2" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+/* Ensure order details card matches height of left cards */
+#orderDetailsCard {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+#orderDetailsCard .card-body {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Left column container for proper height matching */
+.row > .col-md-5 {
+    display: flex;
+    flex-direction: column;
+}
+
+.row > .col-md-5 > .card {
+    flex-shrink: 0;
+}
+
+/* Ensure right column order details card aligns with left cards */
+.row > .col-md-7 > #orderDetailsCard {
+    height: 100%;
+}
+
+.attachment-thumbnail {
+    max-width: 100%;
+    max-height: 150px;
+    border-radius: 4px;
+    object-fit: contain;
+    cursor: pointer;
+}
+.attachment-icon-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    min-height: 150px;
+}
+.thumbnail-container {
+    position: relative;
+    min-height: 150px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.thumbnail-container:hover {
+    background: #e9ecef !important;
+}
+.attachment-checkbox {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 10;
+}
+
+/* Calendar Grid Styles */
+.schedule-calendar {
+    overflow-x: auto;
+}
+.calendar-week {
+    display: flex;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+.calendar-day {
+    flex: 1;
+    min-width: 150px;
+    border-right: 1px solid #dee2e6;
+    background: #fff;
+    padding: 8px;
+}
+.calendar-day:last-child {
+    border-right: none;
+}
+.calendar-day-header {
+    font-weight: bold;
+    text-align: center;
+    padding: 8px;
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    margin: -8px -8px 8px -8px;
+}
+.calendar-day-content {
+    min-height: 100px;
+}
+.order-thumbnail {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+.order-thumbnail:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.order-thumbnail.selected {
+    border-color: #28a745;
+    background: #f0fff4;
+}
+.order-thumbnail.has-po {
+    border-left: 3px solid #007bff;
+}
+.order-thumbnail-checkbox {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    z-index: 10;
+}
+.order-thumbnail-content {
+    font-size: 0.85rem;
+}
+.order-thumbnail-content strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #333;
+}
+.order-thumbnail-content small {
+    display: block;
+    color: #666;
+    margin-top: 2px;
+}
+.order-photo-count {
+    display: inline-block;
+    background: #28a745;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    margin-top: 4px;
+}
+</style>
+<script>
+// CRITICAL: This must execute immediately - using document.write to verify script is parsed
+// Note: document.write is kept for DOM timing - removing it may cause timing issues
+document.write('<!-- SCRIPT BLOCK IS EXECUTING -->');
+
+// Script block loaded
+console.log('=== Script block loaded ===');
+window._scriptLoaded = true;
+
+try {
+    console.log('=== Script block starting to load ===');
+    let currentOrderNumber = '';
+    let currentAttachments = [];
+    let scheduledJobs = [];
+    let mode = 'single'; // 'single' or 'schedule'
+
+    console.log('Variables initialized');
+} catch (e) {
+    console.error('ERROR in script initialization:', e);
+    console.error('Error stack:', e.stack);
+}
+
+// Order Details Functions (defined early so they're available when called)
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
+}
+
+function formatOrderDetails(orderDetails) {
+    let html = '<dl class="row mb-0">';
+    
+    // Sold to builders/customer name (first line)
+    if (orderDetails.sold_to_name) {
+        html += `
+            <dt class="col-5"><i class="fas fa-building"></i> Builder/Customer:</dt>
+            <dd class="col-7"><strong>${escapeHtml(orderDetails.sold_to_name)}</strong></dd>
+        `;
+    }
+    
+    // Ship to customer (next)
+    if (orderDetails.ship_to_name) {
+        html += `
+            <dt class="col-5"><i class="fas fa-user"></i> Ship To Customer:</dt>
+            <dd class="col-7"><strong>${escapeHtml(orderDetails.ship_to_name)}</strong></dd>
+        `;
+    }
+    
+    // PO Number
+    if (orderDetails.po_number) {
+        html += `
+            <dt class="col-5"><i class="fas fa-hashtag"></i> PO Number:</dt>
+            <dd class="col-7"><strong style="color: #8B0000; font-weight: bold;">${escapeHtml(orderDetails.po_number)}</strong></dd>
+        `;
+    }
+    
+    // Our Order Number
+    if (orderDetails.order_number) {
+        html += `
+            <dt class="col-5"><i class="fas fa-file-alt"></i> Our Order #:</dt>
+            <dd class="col-7"><strong style="color: #28a745; font-weight: bold;">${escapeHtml(orderDetails.order_number)}</strong></dd>
+        `;
+    }
+    
+    // Address
+    const address = orderDetails.address || '';
+    if (address) {
+        html += `
+            <dt class="col-5"><i class="fas fa-map-marker-alt"></i> Address:</dt>
+            <dd class="col-7">${escapeHtml(address)}</dd>
+        `;
+    }
+    
+    // City/Suburb
+    const city = orderDetails.city || '';
+    if (city) {
+        html += `
+            <dt class="col-5"><i class="fas fa-city"></i> Suburb:</dt>
+            <dd class="col-7">${escapeHtml(city)}</dd>
+        `;
+    }
+    
+    // Status
+    if (orderDetails.status) {
+        html += `
+            <dt class="col-5"><i class="fas fa-info-circle"></i> Status:</dt>
+            <dd class="col-7"><span class="badge bg-primary">${escapeHtml(orderDetails.status)}</span></dd>
+        `;
+    }
+    
+    // Installation Date (replaces Material Status)
+    if (orderDetails.installation_date) {
+        html += `
+            <dt class="col-5"><i class="fas fa-calendar-alt"></i> Installation Date:</dt>
+            <dd class="col-7"><span class="badge bg-info">${escapeHtml(orderDetails.installation_date)}</span></dd>
+        `;
+    }
+    
+    html += '</dl>';
+    return html;
+}
+
+function displayOrderDetails(orderDetails) {
+    const orderDetailsDiv = document.getElementById('orderDetails');
+    const orderDetailsCard = document.getElementById('orderDetailsCard');
+    
+    if (!orderDetailsDiv) {
+        console.error('orderDetailsDiv element not found in displayOrderDetails');
+        return;
+    }
+    if (!orderDetailsCard) {
+        console.error('orderDetailsCard element not found in displayOrderDetails');
+        return;
+    }
+    if (!orderDetails) {
+        console.warn('displayOrderDetails called with no order details');
+        return;
+    }
+    
+    try {
+        if (typeof formatOrderDetails === 'function') {
+            orderDetailsDiv.innerHTML = formatOrderDetails(orderDetails);
+        } else {
+            orderDetailsDiv.innerHTML = '<pre>' + JSON.stringify(orderDetails, null, 2) + '</pre>';
+        }
+        orderDetailsCard.style.display = 'block';
+        
+        // Match height of order details card to left column cards
+        setTimeout(() => {
+            const leftColumn = document.querySelector('.col-md-5');
+            const rightColumn = document.querySelector('.col-md-7');
+            if (leftColumn && rightColumn && orderDetailsCard) {
+                const leftHeight = leftColumn.offsetHeight;
+                orderDetailsCard.style.minHeight = leftHeight + 'px';
+            }
+        }, 100);
+    } catch (e) {
+        console.error('Error setting order details innerHTML:', e);
+    }
+}
+
+// Single Order Functions - ORIGINAL WORKING CODE
+document.getElementById('fetchBtn').addEventListener('click', fetchAttachments);
+document.getElementById('orderNumber').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        fetchAttachments();
+    }
+});
+
+// Download button is now in the header and uses onclick="createPdf()"
+
+// Scheduled Jobs Functions
+document.getElementById('fetchScheduledJobsBtn').addEventListener('click', fetchScheduledJobs);
+
+document.getElementById('scheduleSelectAllBtn').addEventListener('click', function() {
+    document.querySelectorAll('.order-checkbox').forEach(cb => cb.checked = true);
+    updateScheduleStats();
+});
+
+document.getElementById('scheduleSelectWithPoBtn').addEventListener('click', function() {
+    document.querySelectorAll('.order-checkbox').forEach(cb => {
+        cb.checked = cb.dataset.hasPo === 'true';
+    });
+    updateScheduleStats();
+});
+
+document.getElementById('scheduleSelectInstallerPhotosBtn').addEventListener('click', function() {
+    document.querySelectorAll('.order-checkbox').forEach(cb => {
+        cb.checked = parseInt(cb.dataset.photoCount || '0') > 0;
+    });
+    updateScheduleStats();
+});
+
+document.getElementById('scheduleDeselectAllBtn').addEventListener('click', function() {
+    document.querySelectorAll('.order-checkbox').forEach(cb => cb.checked = false);
+    updateScheduleStats();
+});
+
+document.getElementById('createMultiplePdfsBtn').addEventListener('click', createMultiplePdfs);
+
+function fetchAttachments() {
+    mode = 'single';
+    const orderNumberInput = document.getElementById('orderNumber');
+    if (!orderNumberInput) {
+        console.error('orderNumberInput element not found');
+        alert('Page not fully loaded. Please refresh and try again.');
+        return;
+    }
+    
+    let orderNumber = orderNumberInput.value.trim();
+    const errorDiv = document.getElementById('orderError');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const attachmentsSection = document.getElementById('attachmentsSection');
+    const exportSection = document.getElementById('exportSection');
+    
+    // Validate required elements exist
+    if (!errorDiv || !loadingIndicator || !attachmentsSection || !exportSection) {
+        console.error('Required elements not found:', {
+            errorDiv: !!errorDiv,
+            loadingIndicator: !!loadingIndicator,
+            attachmentsSection: !!attachmentsSection,
+            exportSection: !!exportSection
+        });
+        alert('Page elements not found. Please refresh the page.');
+        return;
+    }
+    const scheduledJobsSection = document.getElementById('scheduledJobsSection');
+    const multiExportSection = document.getElementById('multiExportSection');
+    
+    // Hide schedule view (these might not exist, so check first)
+    if (scheduledJobsSection) {
+        scheduledJobsSection.style.display = 'none';
+    }
+    if (multiExportSection) {
+        multiExportSection.style.display = 'none';
+    }
+    
+    // Hide order details card initially
+    const orderDetailsCard = document.getElementById('orderDetailsCard');
+    if (orderDetailsCard) {
+        orderDetailsCard.style.display = 'none';
+    }
+    
+    // ADDED: Normalize order number - add AZ prefix if missing
+    if (orderNumber && !orderNumber.toUpperCase().startsWith('AZ')) {
+        orderNumber = 'AZ' + orderNumber;
+    } else if (orderNumber) {
+        orderNumber = orderNumber.toUpperCase();
+    }
+    
+    if (!orderNumber || orderNumber === 'AZ') {
+        errorDiv.textContent = 'Please enter an order number';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    // Update input to show only numbers
+    const numericPart = orderNumber.replace(/^AZ/i, '');
+    orderNumberInput.value = numericPart;
+    
+    errorDiv.style.display = 'none';
+    loadingIndicator.style.display = 'block';
+    attachmentsSection.style.display = 'none';
+    exportSection.style.display = 'none';
+    
+    fetch('/api/fetch-order-attachments', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ order_number: orderNumber })
+    })
+    .then(response => response.json())
+    .then(data => {
+        loadingIndicator.style.display = 'none';
+        
+        if (data.success) {
+            currentOrderNumber = orderNumber;
+            currentAttachments = data.attachments || [];
+            
+            // ADDED: Display order details if available (only for single order)
+            if (data.order_details && mode === 'single') {
+                if (typeof displayOrderDetails === 'function') {
+                    displayOrderDetails(data.order_details);
+                } else {
+                    // Fallback
+                    const orderDetailsDiv = document.getElementById('orderDetails');
+                    const orderDetailsCard = document.getElementById('orderDetailsCard');
+                    if (orderDetailsDiv && orderDetailsCard && data.order_details) {
+                        try {
+                            if (typeof formatOrderDetails === 'function') {
+                                orderDetailsDiv.innerHTML = formatOrderDetails(data.order_details);
+                            } else {
+                                orderDetailsDiv.innerHTML = '<pre>' + JSON.stringify(data.order_details, null, 2) + '</pre>';
+                            }
+                            orderDetailsCard.style.display = 'block';
+                        } catch (e) {
+                            console.error('Error setting order details:', e);
+                        }
+                    }
+                }
+            }
+            
+            if (attachmentsSection) {
+                displayAttachments(currentAttachments);
+                attachmentsSection.style.display = 'block';
+            } else {
+                console.error('attachmentsSection element not found');
+            }
+            
+            if (exportSection) {
+                exportSection.style.display = 'block';
+            }
+            
+            const createPdfBtn = document.getElementById('createPdfBtn');
+            const createPdfCard = document.getElementById('createPdfCard');
+            if (createPdfBtn && createPdfCard && currentAttachments.length > 0) {
+                createPdfCard.style.display = 'block';
+                updateDownloadButton();
+            } else if (createPdfCard) {
+                createPdfCard.style.display = 'none';
+            }
+        } else {
+            errorDiv.textContent = data.error || 'Failed to fetch attachments';
+            errorDiv.style.display = 'block';
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching attachments:', error);
+        const errorMessage = error.message || String(error);
+        
+        // Safely handle error display
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
+        if (errorDiv) {
+            errorDiv.textContent = 'Error fetching attachments: ' + errorMessage;
+            errorDiv.style.display = 'block';
+        } else {
+            console.error('errorDiv element not found, cannot display error message');
+            alert('Error fetching attachments: ' + errorMessage);
+        }
+        
+        // Also log to console for debugging
+        if (error.stack) {
+            console.error('Error stack:', error.stack);
+        }
+        
+        // Log which elements are missing
+        console.error('Element status:', {
+            loadingIndicator: !!loadingIndicator,
+            errorDiv: !!errorDiv,
+            attachmentsSection: !!attachmentsSection,
+            exportSection: !!exportSection
+        });
+    });
+}
+
+function fetchScheduledJobs() {
+    mode = 'schedule';
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    const errorDiv = document.getElementById('scheduleError');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const scheduledJobsSection = document.getElementById('scheduledJobsSection');
+    const multiExportSection = document.getElementById('multiExportSection');
+    const attachmentsSection = document.getElementById('attachmentsSection');
+    const exportSection = document.getElementById('exportSection');
+    
+    // Hide single order view
+    attachmentsSection.style.display = 'none';
+    exportSection.style.display = 'none';
+    
+    if (!startDate || !endDate) {
+        errorDiv.textContent = 'Please select both start and end dates';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    if (new Date(startDate) > new Date(endDate)) {
+        errorDiv.textContent = 'Start date must be before end date';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    errorDiv.style.display = 'none';
+    loadingIndicator.style.display = 'block';
+    scheduledJobsSection.style.display = 'none';
+    multiExportSection.style.display = 'none';
+    
+    fetch('/api/fetch-scheduled-jobs', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            start_date: startDate,
+            end_date: endDate
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        loadingIndicator.style.display = 'none';
+        
+        if (data.success) {
+            scheduledJobs = data.jobs || [];
+            displayScheduledJobs(scheduledJobs);
+            scheduledJobsSection.style.display = 'block';
+            multiExportSection.style.display = 'block';
+        } else {
+            errorDiv.textContent = data.error || 'Failed to fetch scheduled jobs';
+            errorDiv.style.display = 'block';
+        }
+    })
+    .catch(error => {
+        loadingIndicator.style.display = 'none';
+        errorDiv.textContent = 'Error fetching scheduled jobs: ' + error.message;
+        errorDiv.style.display = 'block';
+    });
+}
+
+function displayAttachments(attachments) {
+    try {
+    // Ensure attachmentsSection is visible first
+    const attachmentsSection = document.getElementById('attachmentsSection');
+    if (attachmentsSection) {
+        attachmentsSection.style.display = 'block';
+    }
+    
+    const attachmentsList = document.getElementById('attachmentsList');
+    if (!attachmentsList) {
+        console.error('attachmentsList element not found - DOM may not be ready');
+        // Try again after a short delay
+        setTimeout(() => {
+            const retryList = document.getElementById('attachmentsList');
+            if (retryList) {
+                displayAttachments(attachments);
+            } else {
+                console.error('attachmentsList still not found after retry');
+                alert('Error: Page elements not loaded. Please refresh the page.');
+            }
+        }, 100);
+        return;
+    }
+    
+    // Log attachment breakdown for debugging
+    const installerPhotos = attachments.filter(a => a.is_installer_photo);
+    const images = attachments.filter(a => a.is_image);
+    console.log(`Displaying ${attachments.length} total attachments:`, {
+        total: attachments.length,
+        installer_photos: installerPhotos.length,
+        images: images.length,
+        other_files: attachments.length - images.length
+    });
+    
+    attachmentsList.innerHTML = '';
+    
+    if (attachments.length === 0) {
+        attachmentsList.innerHTML = '<div class="col-12"><p class="text-muted">No attachments found for this order.</p></div>';
+        return;
+    }
+    
+    // Filter to only image attachments for display (show all types but only images get thumbnails)
+    const imageAttachments = attachments.filter(att => {
+        const fileExt = (att.fileExtension || att.file_type || att.filename?.split('.').pop() || '').toLowerCase();
+        return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'heif'].includes(fileExt);
+    });
+    
+    // Show all attachments - images get thumbnails, others get icons
+    let html = '<div class="row g-3">';
+    
+    attachments.forEach(att => {
+        const attachmentId = att.id || att.attachmentId || att.attachment_id;
+        const description = att.description || att.name || att.title || att.filename || 'Attachment';
+        const fileExt = (att.fileExtension || att.file_type || att.filename?.split('.').pop() || '').toLowerCase();
+        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'heif'].includes(fileExt);
+        const isInstallerPhoto = att.is_installer_photo || false;
+        
+        // Use fileData (base64) as thumbnail - this should be available from order response
+        // If not available, fetch it as a thumbnail
+        let thumbnailSrc = '';
+        if (isImage) {
+            if (att.fileData) {
+                // Use base64 data from order response as thumbnail
+                thumbnailSrc = `data:image/${fileExt || 'jpeg'};base64,${att.fileData}`;
+            } else {
+                // Fallback: use thumbnail endpoint (faster than full file)
+                thumbnailSrc = `/api/attachment-thumbnail/${attachmentId}`;
+            }
+        }
+        
+        const safeFilename = description.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        
+        if (isImage) {
+            // Image attachment - show thumbnail (larger width)
+            html += `
+                <div class="col-lg-3 col-md-4 col-sm-6 col-6">
+                    <div class="card h-100 position-relative">
+                        <div class="form-check position-absolute" style="top: 5px; left: 5px; z-index: 10;">
+                        <input class="form-check-input attachment-checkbox" type="checkbox" 
+                               id="attachment_${attachmentId}" 
+                               data-attachment-id="${attachmentId}"
+                               data-filename="${safeFilename}"
+                               onchange="updateDownloadButton()">
+                            <label class="form-check-label" for="attachment_${attachmentId}" style="display: none;"></label>
+                        </div>
+                        <img src="${thumbnailSrc}" 
+                             class="card-img-top" 
+                             alt="${safeFilename}"
+                             onclick="showFullImage(${attachmentId}, '${safeFilename}')"
+                             loading="lazy"
+                             onerror="handleImageError(this, ${attachmentId}, '${safeFilename}')"
+                             onload="this.style.opacity='1'"
+                             style="opacity: 0; transition: opacity 0.3s; max-height: 180px; min-height: 180px; width: 100%; object-fit: cover; cursor: pointer; background-color: #f0f0f0;">
+                        <div class="card-body p-2">
+                            <small class="text-muted d-block text-truncate" style="font-size: 0.75rem;" title="${safeFilename}">${escapeHtml(safeFilename)}</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Non-image attachment - show file icon (larger width)
+            const fileType = fileExt || 'file';
+            html += `
+                <div class="col-lg-3 col-md-4 col-sm-6 col-6">
+                    <div class="card h-100 position-relative">
+                        <div class="form-check position-absolute" style="top: 5px; left: 5px; z-index: 10;">
+                            <input class="form-check-input attachment-checkbox" type="checkbox" 
+                                   id="attachment_${attachmentId}" 
+                                   data-attachment-id="${attachmentId}"
+                                   data-filename="${safeFilename}"
+                                   onchange="updateDownloadButton()">
+                            <label class="form-check-label" for="attachment_${attachmentId}" style="display: none;"></label>
+                        </div>
+                        <div class="card-body d-flex flex-column align-items-center justify-content-center" style="min-height: 180px;">
+                            <i class="fas fa-file${fileType === 'pdf' ? '-pdf' : fileType === 'doc' || fileType === 'docx' ? '-word' : ''}" style="font-size: 3rem; color: #ccc;"></i>
+                            <small class="text-muted d-block mt-2">${fileType.toUpperCase() || 'FILE'}</small>
+                            <small class="text-muted d-block text-truncate mt-1" style="font-size: 0.75rem; max-width: 100%;" title="${safeFilename}">${escapeHtml(safeFilename)}</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    html += '</div>';
+    
+    // Double-check element still exists before setting innerHTML
+    const finalCheck = document.getElementById('attachmentsList');
+    if (!finalCheck) {
+        console.error('attachmentsList element disappeared before setting HTML');
+        return;
+    }
+    
+    finalCheck.innerHTML = html;
+    
+    document.querySelectorAll('.attachment-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateSelectionStats);
+    });
+    
+    updateSelectionStats();
+    updateDownloadButton();
+    } catch (e) {
+        console.error('displayAttachments error:', e);
+        console.error('Attachment state:', {
+            attachmentsLength: attachments ? attachments.length : 'n/a',
+            attachmentsSectionExists: !!document.getElementById('attachmentsSection'),
+            attachmentsListExists: !!document.getElementById('attachmentsList')
+        });
+        alert('Error displaying attachments: ' + (e && e.message ? e.message : e));
+    }
+}
+
+function displayScheduledJobs(jobs) {
+    const calendarGrid = document.getElementById('calendarGrid');
+    if (!calendarGrid) {
+        console.error('calendarGrid element not found');
+        return;
+    }
+    
+    calendarGrid.innerHTML = '';
+    
+    if (jobs.length === 0) {
+        calendarGrid.innerHTML = '<div class="alert alert-info">No scheduled jobs found for the selected date range.</div>';
+        updateScheduleStats();
+        return;
+    }
+    
+    // Group jobs by date
+    const jobsByDate = {};
+    jobs.forEach(job => {
+        const date = job.scheduled_date || job.date || new Date().toISOString().split('T')[0];
+        if (!jobsByDate[date]) {
+            jobsByDate[date] = [];
+        }
+        jobsByDate[date].push(job);
+    });
+    
+    // Sort dates
+    const sortedDates = Object.keys(jobsByDate).sort();
+    
+    // Group into weeks (Monday to Saturday, skip Sundays)
+    const weeks = [];
+    let currentWeek = [];
+    
+    sortedDates.forEach(date => {
+        const d = new Date(date + 'T00:00:00');
+        const dayOfWeek = d.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        
+        // Skip Sundays
+        if (dayOfWeek === 0) {
+            return;
+        }
+        
+        // Start new week on Monday (or if current week is full)
+        if (dayOfWeek === 1 || currentWeek.length >= 6) {
+            if (currentWeek.length > 0) {
+                weeks.push(currentWeek);
+            }
+            currentWeek = [];
+        }
+        
+        currentWeek.push({ date, dayOfWeek, jobs: jobsByDate[date] });
+    });
+    
+    if (currentWeek.length > 0) {
+        weeks.push(currentWeek);
+    }
+    
+    // Display weeks
+    weeks.forEach((week, weekIndex) => {
+        const weekDiv = document.createElement('div');
+        weekDiv.className = 'calendar-week';
+        weekDiv.id = `week_${weekIndex}`;
+        
+        const dayNames = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        
+        // Create 6 columns (Monday to Saturday)
+        for (let day = 1; day <= 6; day++) {
+            const dayCol = document.createElement('div');
+            dayCol.className = 'calendar-day';
+            
+            const dayData = week.find(w => w.dayOfWeek === day);
+            
+            // Format date for header
+            let headerText = dayNames[day];
+            if (dayData) {
+                const dateObj = new Date(dayData.date + 'T00:00:00');
+                const dateStr = dateObj.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+                headerText += `<br><small>${dateStr}</small>`;
+            }
+            
+            dayCol.innerHTML = `
+                <div class="calendar-day-header">${headerText}</div>
+                <div class="calendar-day-content">
+                    ${dayData ? dayData.jobs.map(job => createOrderThumbnail(job)).join('') : ''}
+                </div>
+            `;
+            
+            weekDiv.appendChild(dayCol);
+        }
+        
+        calendarGrid.appendChild(weekDiv);
+    });
+    
+    // Add event listeners
+    document.querySelectorAll('.order-checkbox').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const thumbnail = this.closest('.order-thumbnail');
+            if (this.checked) {
+                thumbnail.classList.add('selected');
+            } else {
+                thumbnail.classList.remove('selected');
+            }
+            updateScheduleStats();
+        });
+    });
+    
+    updateScheduleStats();
+}
+
+function createOrderThumbnail(job) {
+    const orderNumber = job.order_number || '';
+    const poNumber = job.po_number || '';
+    const soldTo = job.sold_to || 'N/A';
+    const address = job.ship_to_address || '';
+    const suburb = job.ship_to_suburb || '';
+    const photoCount = job.installer_photo_count || 0;
+    const hasPo = job.has_po || false;
+    const crewName = job.crew_name || 'N/A';
+    
+    const checked = hasPo ? 'checked' : '';
+    const poClass = hasPo ? 'has-po' : '';
+    const selectedClass = hasPo ? 'selected' : '';
+    
+    return `
+        <div class="order-thumbnail ${poClass} ${selectedClass}" onclick="this.querySelector('.order-checkbox').click();">
+            <input type="checkbox" class="order-checkbox" 
+                   data-order-number="${orderNumber}"
+                   data-has-po="${hasPo}"
+                   data-photo-count="${photoCount}"
+                   ${checked}>
+            <div class="order-thumbnail-content">
+                <strong>${escapeHtml(orderNumber || 'N/A')}</strong>
+                <div><strong>${escapeHtml(soldTo)}</strong></div>
+                <small>PO: ${escapeHtml(poNumber || 'N/A')}</small>
+                ${address ? `<small>${escapeHtml(address)}</small>` : ''}
+                ${suburb ? `<small>${escapeHtml(suburb)}</small>` : ''}
+                <small><strong>Crew:</strong> ${escapeHtml(crewName)}</small>
+                ${photoCount > 0 ? `<span class="order-photo-count">${photoCount} Photo${photoCount > 1 ? 's' : ''}</span>` : ''}
+            </div>
+        </div>
+    `;
+}
+
+function updateSelectionStats() {
+    const checkboxes = document.querySelectorAll('.attachment-checkbox');
+    const selected = Array.from(checkboxes).filter(cb => cb.checked);
+    const installerPhotos = Array.from(checkboxes).filter(cb => cb.dataset.isInstallerPhoto === 'true');
+    const selectedInstallerPhotos = Array.from(checkboxes).filter(cb => cb.checked && cb.dataset.isInstallerPhoto === 'true');
+    
+    const statsDiv = document.getElementById('attachmentStats');
+    if (!statsDiv) {
+        // Element doesn't exist yet or was removed - create it if needed
+        const attachmentsList = document.getElementById('attachmentsList');
+        if (attachmentsList && attachmentsList.parentElement) {
+            const newStatsDiv = document.createElement('div');
+            newStatsDiv.id = 'attachmentStats';
+            attachmentsList.parentElement.insertBefore(newStatsDiv, attachmentsList);
+            statsDiv = newStatsDiv;
+        } else {
+            console.warn('attachmentStats element not found and cannot create it');
+            return;
+        }
+    }
+    
+    // Show stats if there are attachments
+    if (checkboxes.length > 0) {
+        statsDiv.style.display = 'block';
+        statsDiv.innerHTML = `
+            <div class="alert alert-info mb-3">
+                <strong>Selection:</strong> ${selected.length} of ${checkboxes.length} attachments selected
+                ${installerPhotos.length > 0 ? `| ${selectedInstallerPhotos.length} of ${installerPhotos.length} installer photos selected` : ''}
+                ${selected.length > 12 ? ' <span class="text-danger">(Maximum 12 allowed for PDF download)</span>' : ''}
+            </div>
+        `;
+    } else {
+        statsDiv.style.display = 'none';
+    }
+}
+
+function updateDownloadButton() {
+    const checkboxes = document.querySelectorAll('.attachment-checkbox:checked');
+    const allCheckboxes = document.querySelectorAll('.attachment-checkbox');
+    const createPdfBtn = document.getElementById('createPdfBtn');
+    const createPdfCard = document.getElementById('createPdfCard');
+    const selectedCountSpan = document.getElementById('selectedCount');
+    
+    // Button should always be visible when attachments are available
+    // Only update the count and enable/disable state
+    if (allCheckboxes.length > 0 && createPdfBtn && createPdfCard) {
+        createPdfCard.style.display = 'block';
+        const selectedCount = checkboxes.length;
+        
+        // Update count display
+        if (selectedCountSpan) {
+            selectedCountSpan.textContent = selectedCount;
+        }
+        
+        // Disable button if 0 selected or more than 12 selected
+        if (selectedCount === 0) {
+            createPdfBtn.disabled = true;
+            createPdfBtn.title = 'Please select at least 1 attachment to download';
+        } else if (selectedCount > 12) {
+            createPdfBtn.disabled = true;
+            createPdfBtn.title = 'Maximum 12 attachments allowed per download';
+        } else {
+            createPdfBtn.disabled = false;
+            createPdfBtn.title = '';
+        }
+    } else if (createPdfCard && allCheckboxes.length === 0) {
+        // Hide card if no attachments
+        createPdfCard.style.display = 'none';
+    }
+}
+
+function showFullImage(attachmentId, filename) {
+    // Create modal for full-size image
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'imageModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">${escapeHtml(filename)}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center p-0">
+                    <div class="d-flex justify-content-center align-items-center" style="min-height: 400px;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <img id="fullImage" src="" alt="${escapeHtml(filename)}" class="img-fluid" style="display: none; max-height: 70vh;">
+                </div>
+                <div class="modal-footer">
+                    <a id="downloadLink" href="#" download="${escapeHtml(filename)}" class="btn btn-primary">
+                        <i class="fas fa-download"></i> Download
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Show modal
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    // Fetch full-resolution image
+    fetch(`/api/attachment-file/${attachmentId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to load image');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            const imageUrl = URL.createObjectURL(blob);
+            const fullImage = modal.querySelector('#fullImage');
+            const downloadLink = modal.querySelector('#downloadLink');
+            const spinner = modal.querySelector('.spinner-border');
+            
+            fullImage.src = imageUrl;
+            fullImage.style.display = 'block';
+            spinner.style.display = 'none';
+            
+            downloadLink.href = imageUrl;
+            
+            // Clean up when modal is closed
+            modal.addEventListener('hidden.bs.modal', function() {
+                URL.revokeObjectURL(imageUrl);
+                document.body.removeChild(modal);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading image:', error);
+            const spinner = modal.querySelector('.spinner-border');
+            if (spinner) {
+                spinner.innerHTML = '<p class="text-danger">Failed to load image</p>';
+            } else {
+                console.error('Spinner element not found in modal');
+            }
+        });
+}
+
+function updateScheduleStats() {
+    const checkboxes = document.querySelectorAll('.order-checkbox');
+    const selected = Array.from(checkboxes).filter(cb => cb.checked);
+    const withPo = Array.from(checkboxes).filter(cb => cb.dataset.hasPo === 'true');
+    const withPhotos = Array.from(checkboxes).filter(cb => parseInt(cb.dataset.photoCount || '0') > 0);
+    const selectedWithPhotos = Array.from(checkboxes).filter(cb => cb.checked && parseInt(cb.dataset.photoCount || '0') > 0);
+    
+    const statsDiv = document.getElementById('scheduleStats');
+    if (!statsDiv) {
+        console.error('scheduleStats element not found');
+        return;
+    }
+    statsDiv.innerHTML = `
+        <strong>Selection:</strong> ${selected.length} of ${checkboxes.length} orders selected
+        | ${withPo.length} orders with PO numbers
+        | ${selectedWithPhotos.length} of ${withPhotos.length} orders with installer photos selected
+    `;
+}
+
+function createPdf() {
+    console.log('createPdf() called');
+    
+    const checkboxes = document.querySelectorAll('.attachment-checkbox:checked');
+    const selectedIds = Array.from(checkboxes).map(cb => {
+        const id = cb.dataset.attachmentId;
+        const parsed = parseInt(id);
+        return !isNaN(parsed) ? parsed : id;
+    });
+    
+    console.log(`Selected ${selectedIds.length} attachments:`, selectedIds);
+    
+    if (selectedIds.length === 0) {
+        const errorDiv = document.getElementById('exportError');
+        const exportSection = document.getElementById('exportSection');
+        if (errorDiv) {
+            errorDiv.textContent = 'Please select at least one attachment';
+            errorDiv.style.display = 'block';
+        }
+        if (exportSection) {
+            exportSection.style.display = 'block';
+        }
+        return;
+    }
+    
+    if (selectedIds.length > 12) {
+        const errorDiv = document.getElementById('exportError');
+        const exportSection = document.getElementById('exportSection');
+        if (errorDiv) {
+            errorDiv.textContent = 'Maximum 12 attachments allowed per download. Please select 12 or fewer attachments.';
+            errorDiv.style.display = 'block';
+        }
+        if (exportSection) {
+            exportSection.style.display = 'block';
+        }
+        return;
+    }
+    
+    if (!currentOrderNumber) {
+        console.error('No current order number set');
+        const errorDiv = document.getElementById('exportError');
+        const exportSection = document.getElementById('exportSection');
+        if (errorDiv) {
+            errorDiv.textContent = 'Error: No order number available. Please fetch attachments first.';
+            errorDiv.style.display = 'block';
+        }
+        if (exportSection) {
+            exportSection.style.display = 'block';
+        }
+        return;
+    }
+    
+    const exportError = document.getElementById('exportError');
+    const exportSuccess = document.getElementById('exportSuccess');
+    const exportSection = document.getElementById('exportSection');
+    const createPdfBtn = document.getElementById('createPdfBtn');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    
+    if (exportError) exportError.style.display = 'none';
+    if (exportSuccess) exportSuccess.style.display = 'none';
+    if (exportSection) exportSection.style.display = 'block';
+    
+    if (!createPdfBtn) {
+        console.error('createPdfBtn element not found');
+        return;
+    }
+    
+    createPdfBtn.disabled = true;
+    createPdfBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating PDF...';
+    
+    if (loadingIndicator) {
+        loadingIndicator.style.display = 'block';
+    }
+    
+    console.log(`Creating PDF for order ${currentOrderNumber} with ${selectedIds.length} attachments`);
+    
+    fetch('/api/create-installer-pdf', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            order_number: currentOrderNumber,
+            attachment_ids: selectedIds
+        })
+    })
+    .then(response => {
+        console.log('PDF creation response status:', response.status);
+        const contentType = response.headers.get('Content-Type') || '';
+        console.log('Content-Type:', contentType);
+        
+        if (response.ok && (contentType.includes('application/pdf') || contentType.includes('application/octet-stream'))) {
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = `${currentOrderNumber}_installer_photos.pdf`;
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+                if (filenameMatch) {
+                    filename = filenameMatch[1];
+                }
+            }
+            
+            return response.blob().then(blob => {
+                console.log('Received blob, size:', blob.size, 'type:', blob.type);
+                
+                // Verify blob is actually a PDF by checking its type or size
+                if (blob.size === 0) {
+                    throw new Error('Received empty file');
+                }
+                
+                // Check if blob starts with PDF magic bytes
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const arrayBuffer = e.target.result;
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    const pdfHeader = String.fromCharCode(...uint8Array.slice(0, 4));
+                    console.log('File header:', pdfHeader);
+                    
+                    if (pdfHeader !== '%PDF') {
+                        console.warn('File does not appear to be a valid PDF');
+                    }
+                };
+                reader.readAsArrayBuffer(blob.slice(0, 4));
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                console.log('PDF downloaded successfully:', filename);
+                
+                if (loadingIndicator) loadingIndicator.style.display = 'none';
+                if (exportSuccess) {
+                    exportSuccess.textContent = `PDF created successfully! Downloaded as ${filename}`;
+                    exportSuccess.style.display = 'block';
+                }
+                if (createPdfBtn) {
+                    createPdfBtn.disabled = false;
+                    createPdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Create Installer Photo PDF';
+                }
+            });
+        } else {
+            // Try to parse as JSON, but handle HTML error pages
+            return response.text().then(text => {
+                console.error('PDF creation failed. Status:', response.status, 'Response:', text.substring(0, 500));
+                let errorMessage = 'Failed to create PDF';
+                try {
+                    const data = JSON.parse(text);
+                    errorMessage = data.error || errorMessage;
+                    console.error('Error from server:', errorMessage);
+                } catch (e) {
+                    // Response is not JSON (likely HTML error page)
+                    if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+                        errorMessage = `Server error (HTTP ${response.status}). Please check the server logs.`;
+                    } else {
+                        errorMessage = text.substring(0, 200) || errorMessage;
+                    }
+                }
+                throw new Error(errorMessage);
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error in createPdf fetch:', error);
+        if (loadingIndicator) loadingIndicator.style.display = 'none';
+        if (exportError) {
+            exportError.textContent = 'Error creating PDF: ' + error.message;
+            exportError.style.display = 'block';
+        }
+        if (createPdfBtn) {
+            createPdfBtn.disabled = false;
+            createPdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Create Installer Photo PDF';
+        }
+    });
+}
+
+function createMultiplePdfs() {
+    const checkboxes = document.querySelectorAll('.order-checkbox:checked');
+    const selectedOrders = Array.from(checkboxes).map(cb => cb.dataset.orderNumber);
+    
+    if (selectedOrders.length === 0) {
+        const errorDiv = document.getElementById('multiExportError');
+        errorDiv.textContent = 'Please select at least one order';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    const exportError = document.getElementById('multiExportError');
+    const exportSuccess = document.getElementById('multiExportSuccess');
+    const createBtn = document.getElementById('createMultiplePdfsBtn');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    
+    exportError.style.display = 'none';
+    exportSuccess.style.display = 'none';
+    if (!createBtn) {
+        console.error('createBtn element not found');
+        return;
+    }
+    createBtn.disabled = true;
+    createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating PDFs...';
+    if (loadingIndicator) {
+        loadingIndicator.style.display = 'block';
+    }
+    
+    // Set a longer timeout for multiple PDF creation (5 minutes)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes
+    
+    fetch('/api/create-multiple-installer-pdfs', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            order_numbers: selectedOrders
+        }),
+        signal: controller.signal
+    })
+    .then(response => {
+        if (response.ok) {
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = 'installer_photos.zip';
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+                if (filenameMatch) {
+                    filename = filenameMatch[1];
+                }
+            }
+            
+            return response.blob().then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                if (loadingIndicator) loadingIndicator.style.display = 'none';
+                if (exportSuccess) {
+                    exportSuccess.textContent = `Created ${selectedOrders.length} PDFs successfully! Downloaded as ${filename}`;
+                    exportSuccess.style.display = 'block';
+                }
+                if (createBtn) {
+                    createBtn.disabled = false;
+                    createBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Create Compressed PDFs for Selected Orders';
+                }
+            });
+        } else {
+            // Try to parse as JSON, but handle HTML error pages
+            return response.text().then(text => {
+                let errorMessage = 'Failed to create PDFs';
+                try {
+                    const data = JSON.parse(text);
+                    errorMessage = data.error || errorMessage;
+                } catch (e) {
+                    // Response is not JSON (likely HTML error page)
+                    if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+                        errorMessage = `Server error (HTTP ${response.status}). Please check the server logs.`;
+                    } else {
+                        errorMessage = text.substring(0, 200) || errorMessage;
+                    }
+                }
+                throw new Error(errorMessage);
+            });
+        }
+    })
+    .catch(error => {
+        clearTimeout(timeoutId);
+        loadingIndicator.style.display = 'none';
+        
+        let errorMessage = 'Error creating PDFs: ';
+        if (error.name === 'AbortError') {
+            errorMessage += 'Request timed out. Please try with fewer orders or contact support.';
+        } else if (error.message.includes('504')) {
+            errorMessage += 'Server timeout. The request took too long. Please try with fewer orders.';
+        } else {
+            errorMessage += error.message;
+        }
+        
+            if (exportError) {
+                exportError.textContent = errorMessage;
+                exportError.style.display = 'block';
+            }
+            if (createBtn) {
+                createBtn.disabled = false;
+                createBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Create Compressed PDFs for Selected Orders';
+            }
+    });
+}
+
+function handleImageError(img, attachmentId, filename) {
+    console.log(`Image load error for attachment ${attachmentId}, trying fallback...`);
+    
+    // If this is the first error and we're using thumbnail endpoint, try attachment-file
+    if (img.src.includes('attachment-thumbnail')) {
+        img.src = `/api/attachment-file/${attachmentId}?thumbnail=true`;
+        img.onerror = function() {
+            // Final fallback - show placeholder
+            console.log(`All image load attempts failed for attachment ${attachmentId}`);
+            this.onerror = null;
+            this.style.opacity = '1';
+            this.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'150\' height=\'150\'%3E%3Crect fill=\'%23ddd\' width=\'150\' height=\'150\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\'%3EImage not available%3C/text%3E%3C/svg%3E';
+        };
+    } else {
+        // Already tried both, show placeholder
+        img.onerror = null;
+        img.style.opacity = '1';
+        img.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'150\' height=\'150\'%3E%3Crect fill=\'%23ddd\' width=\'150\' height=\'150\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\'%3EImage not available%3C/text%3E%3C/svg%3E';
+    }
+}
+</script>
+{% endblock %}

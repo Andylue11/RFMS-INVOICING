@@ -1,0 +1,26 @@
+==========================================
+COPY AND PASTE THIS ENTIRE COMMAND
+==========================================
+
+ssh atoz@AtozServer 'cd /volume1/docker/rfms-uploader && mkdir -p ~/.ssh && chmod 700 ~/.ssh && ssh-keyscan -t rsa,ecdsa,ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null && chmod 600 ~/.ssh/known_hosts && git remote set-url origin git@github.com:Andylue11/RFMS-UPLOADER.git && git fetch origin && git checkout main && git pull origin main && docker-compose down && docker-compose build --no-cache && docker-compose up -d && sleep 10 && docker-compose ps && echo "" && echo "=== Recent Logs ===" && docker-compose logs --tail=30'
+
+==========================================
+OR RUN THE SCRIPT:
+==========================================
+
+./update-server-now.sh
+
+==========================================
+WHAT IT DOES:
+==========================================
+
+1. Sets up GitHub SSH (adds to known_hosts)
+2. Changes git remote to SSH
+3. Fetches and pulls latest code from main branch
+4. Stops the container
+5. Rebuilds the container (no cache)
+6. Starts the container
+7. Shows status and logs
+
+==========================================
+

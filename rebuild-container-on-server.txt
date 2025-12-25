@@ -1,0 +1,25 @@
+==========================================
+Rebuild Container After Manual File Copy
+==========================================
+
+Since you've manually copied the files, just rebuild and restart:
+
+SSH into server and run:
+
+cd /volume1/docker/rfms-uploader
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+
+Then check status:
+docker compose ps
+docker compose logs --tail=30
+
+==========================================
+Or as a single command:
+==========================================
+
+ssh atoz@AtozServer "cd /volume1/docker/rfms-uploader && docker compose down && docker compose build --no-cache && docker compose up -d && sleep 10 && docker compose ps && docker compose logs --tail=30"
+
+==========================================
+

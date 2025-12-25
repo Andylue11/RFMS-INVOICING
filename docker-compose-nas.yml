@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  uploader:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: uploader
+    ports:
+      - "5007:5007"
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+      - PORT=5007
+      - HOST=0.0.0.0
+    env_file:
+      - .env
+    volumes:
+      # Mount to NAS absolute paths
+      - /volume1/docker/rfms-uploader/instance:/app/instance
+      - /volume1/docker/rfms-uploader/uploads:/app/uploads
+      - /volume1/docker/rfms-uploader/logs:/app/logs
+      - /volume1/docker/rfms-uploader/static:/app/static
+      - /volume1/docker/rfms-uploader/data:/app/data
+    restart: unless-stopped
+    networks:
+      - uploader-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5007/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  uploader-network:
+    driver: bridge
+
