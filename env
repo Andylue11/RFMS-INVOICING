@@ -1,0 +1,27 @@
+# RFMS PDF XTRACR - Environment Variables
+# Flask configuration
+SECRET_KEY=your_secret_key_for_flask
+DEBUG=True# RFMS PDF XTRACR - Environment Variables
+
+# Database configuration
+DATABASE_URI=sqlite:///rfms_xtracr.db
+
+# RFMS API configuration
+RFMS_BASE_URL=https://api.rfms.online
+RFMS_STORE_CODE=store-5291f4e3dca04334afede9f642ec6157
+RFMS_USERNAME=store-5291f4e3dca04334afede9f642ec6157
+RFMS_API_KEY=49bf22ea017f4b97aabc99def43c0b66
+
+
+# RFMS API configuration - TEST
+# RFMS_BASE_URL=https://api.rfms.online
+# RFMS_STORE_CODE=store-dd234af4eca74fe0b0994ad6c5ac40a2
+# RFMS_USERNAME=rfmscloud\atozTest.user
+# RFMS_API_KEY=b5c1dc437495408d99cd25487cbd1acc
+
+# AI Extraction configuration
+GEMINI_API_KEY=AIzaSyCCMqvyTJlLcPk3THKZgugrb4oEVpLVOa4
+
+# File upload configuration
+UPLOAD_FOLDER=uploads
+MAX_CONTENT_LENGTH=16777216  # 16MB
