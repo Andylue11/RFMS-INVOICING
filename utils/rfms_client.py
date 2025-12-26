@@ -1564,4 +1564,145 @@ class RFMSClient:
         
         # Should never reach here, but just in case
         raise Exception(f"RFMS API error: Failed to create payable after retry")
+    
+    def get_suppliers(self) -> Dict:
+        """
+        Get all suppliers from RFMS.
+        
+        Returns:
+            Dict: Response from the RFMS API with list of suppliers
+        """
+        endpoint = f"{self.base_url}/v2/suppliers"
+        
+        # Try request, retry once if 401/403 (session expired)
+        for attempt in range(2):
+            response = requests.get(
+                endpoint,
+                auth=self.auth,
+                headers=self.headers
+            )
+            
+            # If successful, return the data
+            if response.status_code in [200, 201]:
+                result = response.json()
+                logger.info(f"Get suppliers response: {result.get('status')}, count: {len(result.get('detail', []))}")
+                return result
+            
+            # If authentication error, invalidate session and retry once
+            if response.status_code in [401, 403] and attempt == 0:
+                logger.warning(f"Authentication failed for get_suppliers, invalidating session and retry...")
+                self._handle_auth_error(response)
+                self.start_session(force=True)
+                continue
+            
+            # For other errors or if retry failed, raise exception
+            logger.error(f"Failed to get suppliers. Status code: {response.status_code}")
+            logger.error(f"Response: {response.text[:500]}")
+            raise Exception(f"RFMS API error: HTTP {response.status_code} - {response.text[:200]}")
+        
+        # Should never reach here, but just in case
+        raise Exception(f"RFMS API error: Failed to get suppliers after retry")
+    
+    def find_supplier_by_name(self, supplier_name: str) -> Optional[Dict]:
+        """
+        Search for a supplier by name (case-insensitive partial match).
+        
+        Args:
+            supplier_name: Supplier name to search for
+            
+        Returns:
+            Dict with supplier details if found, None otherwise
+        """
+        try:
+            suppliers_result = self.get_suppliers()
+            if suppliers_result.get('status') != 'success':
+                return None
+            
+            suppliers = suppliers_result.get('detail', [])
+            if not isinstance(suppliers, list):
+                return None
+            
+            supplier_name_lower = supplier_name.lower().strip()
+            
+            # Try exact match first
+            for supplier in suppliers:
+                if supplier.get('name', '').lower().strip() == supplier_name_lower:
+                    return supplier
+            
+            # Try partial match
+            for supplier in suppliers:
+                supplier_name_in_list = supplier.get('name', '').lower().strip()
+                if supplier_name_lower in supplier_name_in_list or supplier_name_in_list in supplier_name_lower:
+                    return supplier
+            
+            # Try word-by-word matching
+            supplier_words = set(supplier_name_lower.split())
+            for supplier in suppliers:
+                supplier_name_in_list = supplier.get('name', '').lower().strip()
+                supplier_words_in_list = set(supplier_name_in_list.split())
+                if len(supplier_words.intersection(supplier_words_in_list)) >= 2:
+                    return supplier
+            
+            return None
+        except Exception as exc:
+            logger.error(f"Error finding supplier by name: {exc}", exc_info=True)
+            return None
+    
+    def post_provider_record(self, document_number: str, line_number: int, 
+                            install_date: str, supplier_id: int) -> Dict:
+        """
+        Post a provider record to an order in RFMS.
+        
+        Args:
+            document_number: Order/document number (e.g., "CG203699")
+            line_number: Line number on the order (integer, e.g., 1)
+            install_date: Installation date in format "YYYY-MM-DD" (e.g., "2022-04-07")
+            supplier_id: RFMS supplier ID (integer, e.g., 71)
+        
+        Returns:
+            Dict: Response from the RFMS API
+        """
+        endpoint = f"{self.base_url}/v2/order/provider"
+        
+        payload = {
+            "documentNumber": document_number,
+            "lineNumber": line_number,
+            "installDate": install_date,
+            "supplierId": supplier_id
+        }
+        
+        logger.info(f"Posting provider record: {document_number}, line {line_number}, supplier {supplier_id}")
+        logger.debug(f"Provider payload: {payload}")
+        
+        # Try request, retry once if 401/403 (session expired)
+        for attempt in range(2):
+            response = requests.post(
+                endpoint,
+                auth=self.auth,
+                json=payload,
+                headers=self.headers
+            )
+            
+            # If successful, return the data
+            if response.status_code in [200, 201]:
+                result = response.json()
+                logger.info(f"Post provider record response: {result.get('status')}, result: {result.get('result')}")
+                if result.get('status') == 'success':
+                    logger.info(f"Provider record posted successfully for order {document_number}")
+                return result
+            
+            # If authentication error, invalidate session and retry once
+            if response.status_code in [401, 403] and attempt == 0:
+                logger.warning(f"Authentication failed for post_provider_record, invalidating session and retrying...")
+                self._handle_auth_error(response)
+                self.start_session(force=True)
+                continue
+            
+            # For other errors or if retry failed, raise exception
+            logger.error(f"Failed to post provider record. Status code: {response.status_code}")
+            logger.error(f"Response: {response.text[:500]}")
+            raise Exception(f"RFMS API error: HTTP {response.status_code} - {response.text[:200]}")
+        
+        # Should never reach here, but just in case
+        raise Exception(f"RFMS API error: Failed to post provider record after retry")
 
