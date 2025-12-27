@@ -1,0 +1,224 @@
+{% extends 'base_portal.html' %}
+{% block title %}Invoice {{ invoice.invoice_number }} - Accounts{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <img src="{{ url_for('static', filename='customcolor_logo_transparent_background.jpeg') }}" 
+                 alt="A to Z Flooring Solutions" 
+                 style="max-height: 60px; max-width: 200px;">
+            <div>
+                <h2 class="mb-0">Invoice {{ invoice.invoice_number }}</h2>
+                <p class="text-muted mb-0">{{ installer.name }} • Order {{ work_order.order_number if work_order else 'N/A' }}</p>
+            </div>
+        </div>
+        <div>
+            <a href="{{ url_for('portal.accounts_dashboard') }}" class="btn btn-outline-secondary">Back to Dashboard</a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <!-- Invoice Details -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Invoice Details</h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th style="width: 40%;">Invoice Number:</th>
+                                    <td>{{ invoice.invoice_number }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Invoice Date:</th>
+                                    <td>{{ invoice.submitted_at.strftime('%d %B %Y') if invoice.submitted_at else 'Draft' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Order Number:</th>
+                                    <td>{{ work_order.order_number if work_order else 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Job Number:</th>
+                                    <td>{{ work_order.job_number if work_order and work_order.job_number else 'N/A' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th style="width: 40%;">Installer:</th>
+                                    <td>{{ installer.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Business:</th>
+                                    <td>{{ installer.business_name or installer.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>ABN:</th>
+                                    <td>{{ installer.abn or 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>GST Registered:</th>
+                                    <td>
+                                        {% if installer.gst_registered %}
+                                        <span class="badge bg-success">Yes</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">No</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if installer.get_full_address() %}
+                    <div class="mb-3">
+                        <strong>Address:</strong><br>
+                        {{ installer.get_full_address() }}
+                    </div>
+                    {% endif %}
+
+                    <!-- Line Items -->
+                    <h6 class="mt-4 mb-3">Line Items</h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Description</th>
+                                    <th class="text-end">Quantity</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Tax Rate</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for line in invoice.lines %}
+                                <tr>
+                                    <td>{{ line.description }}</td>
+                                    <td class="text-end">{{ '%.2f'|format(line.quantity) }}</td>
+                                    <td class="text-end">${{ '%.2f'|format(line.unit_price) }}</td>
+                                    <td class="text-end">{{ '%.1f'|format(line.tax_rate * 100) }}%</td>
+                                    <td class="text-end">${{ '%.2f'|format(line.total) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="4" class="text-end">Subtotal:</th>
+                                    <th class="text-end">${{ '%.2f'|format(invoice.subtotal) }}</th>
+                                </tr>
+                                <tr>
+                                    <th colspan="4" class="text-end">Tax:</th>
+                                    <th class="text-end">${{ '%.2f'|format(invoice.tax_amount) }}</th>
+                                </tr>
+                                <tr class="table-primary">
+                                    <th colspan="4" class="text-end">Total:</th>
+                                    <th class="text-end">${{ '%.2f'|format(invoice.total) }}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    {% if invoice.notes %}
+                    <div class="mt-3">
+                        <strong>Notes:</strong>
+                        <p class="bg-light p-3 rounded">{{ invoice.notes }}</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Attachments -->
+                    {% if invoice.attachments %}
+                    <div class="mt-3">
+                        <strong>Attachments:</strong>
+                        <ul class="list-unstyled">
+                            {% for attachment in invoice.attachments %}
+                            <li>
+                                <i class="fa fa-file me-2"></i>{{ attachment.filename }}
+                                <small class="text-muted">({{ attachment.uploaded_at.strftime('%d %b %Y %H:%M') if attachment.uploaded_at else '' }})</small>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Actions -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Actions</h5>
+                    
+                    <div class="d-grid gap-2 mb-3">
+                        <a href="{{ url_for('portal.export_invoice_pdf', invoice_id=invoice.id) }}" 
+                           class="btn btn-primary">
+                            <i class="fa fa-file-pdf me-2"></i>Print/Download PDF
+                        </a>
+                        <a href="{{ url_for('portal.export_invoice_xero', invoice_id=invoice.id) }}" 
+                           class="btn btn-outline-success">
+                            <i class="fa fa-download me-2"></i>Export to Xero (CSV)
+                        </a>
+                    </div>
+
+                    {% if not invoice.exported_at %}
+                    <div class="alert alert-info">
+                        <strong>Post Provider Record to RFMS</strong>
+                        <p class="mb-2 small">Post a provider record to the RFMS order for this invoice.</p>
+                        {% if not installer.rfms_supplier_id %}
+                        <div class="alert alert-warning mb-2">
+                            <small><strong>Warning:</strong> RFMS Supplier ID not set. Please set it in the installer profile.</small>
+                        </div>
+                        {% endif %}
+                        <form method="post" action="{{ url_for('portal.post_provider_record', invoice_id=invoice.id) }}">
+                            <button type="submit" class="btn btn-success btn-sm w-100" {% if not installer.rfms_supplier_id %}disabled{% endif %}>
+                                <i class="fa fa-plus me-2"></i>Post Provider Record
+                            </button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success">
+                        <i class="fa fa-check-circle me-2"></i>
+                        <strong>Provider Record Posted</strong>
+                        <p class="mb-0 small">Posted on {{ invoice.exported_at.strftime('%d %B %Y at %H:%M') }}</p>
+                    </div>
+                    {% endif %}
+
+                    <hr>
+
+                    <div class="small text-muted">
+                        <strong>Status:</strong> 
+                        <span class="badge {% if invoice.status == 'submitted' %}bg-success{% else %}bg-secondary{% endif %}">
+                            {{ invoice.status|capitalize }}
+                        </span>
+                        <br>
+                        <strong>Submitted:</strong> 
+                        {{ invoice.submitted_at.strftime('%d %B %Y at %H:%M') if invoice.submitted_at else 'Not submitted' }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Installer Contact -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Installer Contact</h6>
+                    <p class="mb-1">
+                        <strong>{{ installer.name }}</strong><br>
+                        {% if installer.business_name %}{{ installer.business_name }}<br>{% endif %}
+                        {% if installer.email %}{{ installer.email }}<br>{% endif %}
+                        {% if installer.phone %}{{ installer.phone }}{% endif %}
+                    </p>
+                    {% if installer.get_full_address() %}
+                    <p class="mb-0 small text-muted">
+                        {{ installer.get_full_address() }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

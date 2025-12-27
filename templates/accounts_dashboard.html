@@ -1,0 +1,156 @@
+{% extends 'base_portal.html' %}
+{% block title %}Accounts Dashboard - Installer Invoices{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <img src="{{ url_for('static', filename='customcolor_logo_transparent_background.jpeg') }}" 
+                 alt="A to Z Flooring Solutions" 
+                 style="max-height: 60px; max-width: 200px;">
+            <div>
+                <h2 class="mb-0">Accounts Dashboard</h2>
+                <p class="text-muted mb-0">Installer Invoice Management</p>
+            </div>
+        </div>
+        <div>
+            <a href="{{ url_for('portal.admin_dashboard') }}" class="btn btn-outline-secondary">Admin Dashboard</a>
+            <a href="{{ url_for('portal.logout') }}" class="btn btn-outline-danger">Logout</a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Submitted Invoices</h5>
+                    <h2 class="mb-0">{{ total_submitted }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white" style="background-color: #d4a574;">
+                <div class="card-body">
+                    <h5 class="card-title">Draft Invoices</h5>
+                    <h2 class="mb-0">{{ total_draft }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Amount</h5>
+                    <h2 class="mb-0">${{ '%.2f'|format(total_amount) }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="status" class="form-label">Status</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="submitted" {% if filter_status == 'submitted' %}selected{% endif %}>Submitted</option>
+                        <option value="draft" {% if filter_status == 'draft' %}selected{% endif %}>Draft</option>
+                        <option value="all" {% if filter_status == 'all' %}selected{% endif %}>All</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="installer_id" class="form-label">Installer</label>
+                    <select name="installer_id" id="installer_id" class="form-select">
+                        <option value="">All Installers</option>
+                        {% for installer in all_installers %}
+                        <option value="{{ installer.id }}" {% if filter_installer == installer.id %}selected{% endif %}>
+                            {{ installer.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">Filter</button>
+                    <a href="{{ url_for('portal.accounts_dashboard') }}" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Invoices Table -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Invoices</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Installer</th>
+                            <th>Order #</th>
+                            <th>Job #</th>
+                            <th>Date</th>
+                            <th>Subtotal</th>
+                            <th>Tax</th>
+                            <th>Total</th>
+                            <th>Provider Posted</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in invoices %}
+                        <tr>
+                            <td><strong>{{ invoice.invoice_number }}</strong></td>
+                            <td>
+                                {{ invoice.installer.name }}
+                                {% if invoice.installer.business_name %}
+                                <br><small class="text-muted">{{ invoice.installer.business_name }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ invoice.work_order.order_number if invoice.work_order else 'N/A' }}</td>
+                            <td>{{ invoice.work_order.job_number if invoice.work_order and invoice.work_order.job_number else 'N/A' }}</td>
+                            <td>
+                                {% if invoice.submitted_at %}
+                                {{ invoice.submitted_at.strftime('%d %b %Y') }}
+                                {% else %}
+                                <span class="text-muted">Draft</span>
+                                {% endif %}
+                            </td>
+                            <td>${{ '%.2f'|format(invoice.subtotal) }}</td>
+                            <td>${{ '%.2f'|format(invoice.tax_amount) }}</td>
+                            <td><strong>${{ '%.2f'|format(invoice.total) }}</strong></td>
+                            <td>
+                                {% if invoice.exported_at %}
+                                <span class="badge bg-success">Posted</span>
+                                <br><small>{{ invoice.exported_at.strftime('%d %b %Y') }}</small>
+                                {% else %}
+                                <span class="badge" style="background-color: #d4a574; color: #fff;">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('portal.view_invoice_accounts', invoice_id=invoice.id) }}" 
+                                       class="btn btn-outline-primary" title="View">
+                                        <i class="fa fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('portal.export_invoice_pdf', invoice_id=invoice.id) }}" 
+                                       class="btn btn-outline-secondary" title="Print PDF">
+                                        <i class="fa fa-print"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not invoices %}
+                        <tr>
+                            <td colspan="10" class="text-center text-muted py-4">No invoices found</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

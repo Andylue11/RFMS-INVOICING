@@ -1,0 +1,191 @@
+{% extends 'base_portal.html' %}
+{% block title %}Export Invoices{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">Export Invoices</h2>
+            <p class="text-muted mb-0">Select invoices to export to Xero or as PDF via email</p>
+        </div>
+        <div>
+            <a href="{{ url_for('portal.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fa fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    {% if invoices %}
+    <form method="post" action="{{ url_for('portal.export_invoices') }}" id="exportForm">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">Select Invoices</h5>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAll()">Select All</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAll()">Deselect All</button>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">
+                                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleAll(this)">
+                                </th>
+                                <th>Invoice #</th>
+                                <th>Order #</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invoice in invoices %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" 
+                                           name="invoice_ids" 
+                                           value="{{ invoice.id }}" 
+                                           class="invoice-checkbox">
+                                </td>
+                                <td class="fw-semibold">{{ invoice.invoice_number }}</td>
+                                <td>{{ invoice.work_order.order_number if invoice.work_order else 'N/A' }}</td>
+                                <td>
+                                    <span class="badge {% if invoice.status == 'submitted' %}bg-success{% elif invoice.status == 'draft' %}bg-secondary{% else %}bg-warning{% endif %}">
+                                        {{ invoice.status|capitalize }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if invoice.submitted_at %}
+                                        {{ invoice.submitted_at.strftime('%d %b %Y') }}
+                                    {% elif invoice.created_at %}
+                                        {{ invoice.created_at.strftime('%d %b %Y') }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td class="fw-semibold">${{ "%.2f"|format(invoice.total) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Export Options</h5>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card border-primary">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fa fa-file-csv text-primary me-2"></i>Export to Xero (CSV)
+                                </h6>
+                                <p class="card-text text-muted small">
+                                    Export selected invoices as a CSV file compatible with Xero accounting software.
+                                </p>
+                                <button type="submit" 
+                                        name="action" 
+                                        value="export_xero" 
+                                        class="btn btn-primary w-100"
+                                        onclick="return validateSelection()">
+                                    <i class="fa fa-download me-2"></i>Export to Xero
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card border-success">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fa fa-file-pdf text-success me-2"></i>Export to PDF & Email
+                                </h6>
+                                <p class="card-text text-muted small">
+                                    Export selected invoices as a PDF and send to an email address.
+                                </p>
+                                <div class="mb-2">
+                                    <input type="email" 
+                                           name="email_address" 
+                                           class="form-control" 
+                                           placeholder="Enter email address"
+                                           required>
+                                </div>
+                                <button type="submit" 
+                                        name="action" 
+                                        value="export_pdf_email" 
+                                        class="btn btn-success w-100"
+                                        onclick="return validateSelection()">
+                                    <i class="fa fa-envelope me-2"></i>Export & Email PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    {% else %}
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="fa fa-file-invoice fa-3x text-muted mb-3"></i>
+            <h5>No Invoices Found</h5>
+            <p class="text-muted">You don't have any invoices yet. Create an invoice from the dashboard.</p>
+            <a href="{{ url_for('portal.dashboard') }}" class="btn btn-primary">
+                <i class="fa fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleAll(checkbox) {
+    const checkboxes = document.querySelectorAll('.invoice-checkbox');
+    checkboxes.forEach(cb => cb.checked = checkbox.checked);
+}
+
+function selectAll() {
+    const checkboxes = document.querySelectorAll('.invoice-checkbox');
+    checkboxes.forEach(cb => cb.checked = true);
+    document.getElementById('selectAllCheckbox').checked = true;
+}
+
+function deselectAll() {
+    const checkboxes = document.querySelectorAll('.invoice-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+    document.getElementById('selectAllCheckbox').checked = false;
+}
+
+function validateSelection() {
+    const selected = document.querySelectorAll('.invoice-checkbox:checked');
+    if (selected.length === 0) {
+        alert('Please select at least one invoice to export.');
+        return false;
+    }
+    return true;
+}
+
+// Update select all checkbox when individual checkboxes change
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.invoice-checkbox');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            const allChecked = Array.from(checkboxes).every(c => c.checked);
+            const noneChecked = Array.from(checkboxes).every(c => !c.checked);
+            selectAllCheckbox.checked = allChecked;
+            selectAllCheckbox.indeterminate = !allChecked && !noneChecked;
+        });
+    });
+});
+</script>
+{% endblock %}
+
+
+

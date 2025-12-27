@@ -1,0 +1,150 @@
+{% extends 'base_portal.html' %}
+{% block title %}Edit Installer - Admin{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">Edit Installer: {{ installer.name }}</h2>
+            <p class="text-muted mb-0">Update installer account details</p>
+        </div>
+        <div>
+            <a href="{{ url_for('portal.admin_dashboard') }}" class="btn btn-outline-secondary">Back to Admin Dashboard</a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="name" class="form-label">Full Name</label>
+                        <input type="text" name="name" id="name" class="form-control" value="{{ installer.name }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" name="email" id="email" class="form-control" value="{{ installer.email }}" required>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="phone" class="form-label">Phone</label>
+                        <input type="tel" name="phone" id="phone" class="form-control" value="{{ installer.phone or '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="crew_code" class="form-label">Crew Code</label>
+                        <input type="text" name="crew_code" id="crew_code" class="form-control" value="{{ installer.crew_code or '' }}">
+                    </div>
+                </div>
+
+                <hr class="my-4">
+                <h5 class="mb-3">Business Details</h5>
+
+                <div class="mb-3">
+                    <label for="business_name" class="form-label">Business Name</label>
+                    <input type="text" name="business_name" id="business_name" class="form-control" value="{{ installer.business_name or '' }}">
+                </div>
+
+                <div class="mb-3">
+                    <label for="address_line1" class="form-label">Address Line 1</label>
+                    <input type="text" name="address_line1" id="address_line1" class="form-control" value="{{ installer.address_line1 or '' }}">
+                </div>
+
+                <div class="mb-3">
+                    <label for="address_line2" class="form-label">Address Line 2</label>
+                    <input type="text" name="address_line2" id="address_line2" class="form-control" value="{{ installer.address_line2 or '' }}">
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="city" class="form-label">City</label>
+                        <input type="text" name="city" id="city" class="form-control" value="{{ installer.city or '' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="state" class="form-label">State</label>
+                        <input type="text" name="state" id="state" class="form-control" value="{{ installer.state or '' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="postal_code" class="form-label">Postal Code</label>
+                        <input type="text" name="postal_code" id="postal_code" class="form-control" value="{{ installer.postal_code or '' }}">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="abn" class="form-label">ABN</label>
+                        <input type="text" name="abn" id="abn" class="form-control" value="{{ installer.abn or '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="rfms_installer_id" class="form-label">RFMS Installer ID (Legacy)</label>
+                        <input type="text" name="rfms_installer_id" id="rfms_installer_id" class="form-control" value="{{ installer.rfms_installer_id or '' }}">
+                        <small class="text-muted">Legacy installer ID field</small>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="rfms_supplier_id" class="form-label">RFMS Supplier ID</label>
+                        <input type="number" name="rfms_supplier_id" id="rfms_supplier_id" class="form-control" value="{{ installer.rfms_supplier_id or '' }}">
+                        <small class="text-muted">RFMS Supplier ID for provider records (required for posting invoices)</small>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check mt-4 pt-3">
+                            <input class="form-check-input" type="checkbox" name="search_supplier" id="search_supplier">
+                            <label class="form-check-label" for="search_supplier">
+                                Search RFMS for Supplier ID
+                            </label>
+                            <small class="d-block text-muted">Searches RFMS suppliers by business name</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="invoice_prefix" class="form-label">Invoice Prefix</label>
+                        <input type="text" name="invoice_prefix" id="invoice_prefix" class="form-control" value="{{ installer.invoice_prefix or 'INV' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="password" class="form-label">New Password (leave blank to keep current)</label>
+                        <input type="password" name="password" id="password" class="form-control">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="gst_registered" id="gst_registered" {% if installer.gst_registered %}checked{% endif %}>
+                            <label class="form-check-label" for="gst_registered">GST Registered</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="active" id="active" {% if installer.active %}checked{% endif %}>
+                            <label class="form-check-label" for="active">Active</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="approved" id="approved" {% if installer.approved %}checked{% endif %}>
+                            <label class="form-check-label" for="approved">Approved</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" name="is_admin" id="is_admin" {% if installer.is_admin %}checked{% endif %}>
+                    <label class="form-check-label" for="is_admin">
+                        Administrator Access
+                    </label>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{{ url_for('portal.admin_dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

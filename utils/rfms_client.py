@@ -857,6 +857,48 @@ class RFMSClient:
         # Should never reach here, but just in case
         raise Exception(f"RFMS API error: Failed to get attachment {attachment_id} after retry")
 
+    def get_order_jobs(self, order_number: str) -> Dict:
+        """
+        Get scheduled jobs for an order using the /order/jobs/{order_number} endpoint.
+        This is the definitive way to check if an order has scheduled jobs.
+        
+        Args:
+            order_number: The order number to get jobs for
+            
+        Returns:
+            Dict: Response with 'detail' array containing job details if scheduled, empty array if not
+            Format: {"status": "success", "result": "OK", "detail": [...]}
+        """
+        # Normalize order number to uppercase
+        order_number = str(order_number).strip().upper()
+        endpoint = f"{self.base_url}/v2/order/jobs/{order_number}"
+        
+        # Try request, retry once if 401/403 (session expired)
+        for attempt in range(2):
+            response = requests.get(
+                endpoint,
+                auth=self.auth,
+                headers=self.headers
+            )
+            
+            # If successful, return the data
+            if response.status_code in [200, 201]:
+                return response.json()
+            
+            # If authentication error, invalidate session and retry once
+            if response.status_code in [401, 403] and attempt == 0:
+                logger.warning(f"Authentication failed for order jobs {order_number}, invalidating session and retrying...")
+                self._handle_auth_error(response)
+                continue
+            
+            # For other errors or if retry failed, raise exception
+            logger.error(f"Failed to get order jobs for {order_number}. Status code: {response.status_code}")
+            logger.error(f"Response: {response.text[:500]}")
+            raise Exception(f"RFMS API error: HTTP {response.status_code} - {response.text[:200]}")
+        
+        # Should never reach here, but just in case
+        raise Exception(f"RFMS API error: Failed to get order jobs for {order_number} after retry")
+
     def find_jobs_by_date_range(self, start_date: str, end_date: str, crews: List[str] = None, 
                                 job_status: List[str] = None, record_status: str = "Both") -> Dict:
         """

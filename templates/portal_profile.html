@@ -1,0 +1,181 @@
+{% extends 'base_portal.html' %}
+{% block title %}My Profile - Installer Portal{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">My Profile</h2>
+            <p class="text-muted mb-0">Manage your account information</p>
+        </div>
+        <div>
+            <a href="{{ url_for('portal.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fa fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Account Information</h5>
+                    <form method="post" id="profile-form">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">Full Name</label>
+                                <input type="text" name="name" id="name" class="form-control" value="{{ installer.name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" name="email" id="email" class="form-control" value="{{ installer.email }}" disabled>
+                                <small class="text-muted">Email cannot be changed. Contact administrator if needed.</small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" name="phone" id="phone" class="form-control" value="{{ installer.phone or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="crew_code" class="form-label">Crew Code</label>
+                                <input type="text" name="crew_code" id="crew_code" class="form-control" value="{{ installer.crew_code or '' }}" disabled>
+                                <small class="text-muted">Crew code is managed by administrator.</small>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h6 class="mb-3">Business Details</h6>
+
+                        <div class="mb-3">
+                            <label for="business_name" class="form-label">Business Name</label>
+                            <input type="text" name="business_name" id="business_name" class="form-control" value="{{ installer.business_name or '' }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="address_line1" class="form-label">Address Line 1</label>
+                            <input type="text" name="address_line1" id="address_line1" class="form-control" value="{{ installer.address_line1 or '' }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="address_line2" class="form-label">Address Line 2</label>
+                            <input type="text" name="address_line2" id="address_line2" class="form-control" value="{{ installer.address_line2 or '' }}">
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="city" class="form-label">City</label>
+                                <input type="text" name="city" id="city" class="form-control" value="{{ installer.city or '' }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="state" class="form-label">State</label>
+                                <input type="text" name="state" id="state" class="form-control" value="{{ installer.state or '' }}" placeholder="e.g., QLD, NSW">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="postal_code" class="form-label">Postal Code</label>
+                                <input type="text" name="postal_code" id="postal_code" class="form-control" value="{{ installer.postal_code or '' }}">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="abn" class="form-label">ABN (Australian Business Number)</label>
+                                <input type="text" name="abn" id="abn" class="form-control" value="{{ installer.abn or '' }}" placeholder="e.g., 12 345 678 901">
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mt-4 pt-3">
+                                    <input class="form-check-input" type="checkbox" name="gst_registered" id="gst_registered" {% if installer.gst_registered %}checked{% endif %}>
+                                    <label class="form-check-label" for="gst_registered">
+                                        Registered for GST
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{{ url_for('portal.dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Change Password Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Change Password</h5>
+                    <p class="text-muted small mb-3">To change your password, fill in the fields below and click "Save Changes" on the left.</p>
+                    <div class="mb-3">
+                        <label for="current_password" class="form-label">Current Password</label>
+                        <input type="password" name="current_password" id="current_password" class="form-control" form="profile-form">
+                        <small class="text-muted">Required only if changing password</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">New Password</label>
+                        <input type="password" name="new_password" id="new_password" class="form-control" minlength="6" form="profile-form">
+                        <small class="text-muted">Leave blank to keep current password. Minimum 6 characters.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Confirm New Password</label>
+                        <input type="password" name="confirm_password" id="confirm_password" class="form-control" form="profile-form">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Status Card -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Account Status</h6>
+                    <dl class="row mb-0">
+                        <dt class="col-6">Status:</dt>
+                        <dd class="col-6">
+                            {% if installer.active and installer.approved %}
+                            <span class="badge bg-success">Active</span>
+                            {% elif installer.approved %}
+                            <span class="badge bg-warning">Pending</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </dd>
+                        <dt class="col-6">Member Since:</dt>
+                        <dd class="col-6">
+                            {{ installer.created_at.strftime('%d %b %Y') if installer.created_at else 'N/A' }}
+                        </dd>
+                        {% if installer.rfms_supplier_id %}
+                        <dt class="col-6">RFMS Supplier ID:</dt>
+                        <dd class="col-6">
+                            <span class="badge bg-info">{{ installer.rfms_supplier_id }}</span>
+                        </dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Password confirmation validation
+    document.getElementById('confirm_password').addEventListener('input', function() {
+        const newPassword = document.getElementById('new_password').value;
+        const confirm = this.value;
+        if (newPassword !== confirm) {
+            this.setCustomValidity('Passwords do not match');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+    
+    // Also validate when new password changes
+    document.getElementById('new_password').addEventListener('input', function() {
+        const confirm = document.getElementById('confirm_password');
+        if (confirm.value) {
+            confirm.dispatchEvent(new Event('input'));
+        }
+    });
+</script>
+{% endblock %}
+

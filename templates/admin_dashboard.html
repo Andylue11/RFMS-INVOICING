@@ -1,0 +1,137 @@
+{% extends 'base_portal.html' %}
+{% block title %}Admin Dashboard - Installer Management{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">Admin Dashboard</h2>
+            <p class="text-muted mb-0">Installer Account Management</p>
+        </div>
+        <div>
+            <a href="{{ url_for('portal.accounts_dashboard') }}" class="btn btn-primary">
+                <i class="fa fa-file-invoice me-2"></i>Accounts Dashboard
+            </a>
+            <a href="{{ url_for('portal.export_installers') }}" class="btn btn-success">
+                <i class="fa fa-download me-2"></i>Export Installers
+            </a>
+            <a href="{{ url_for('portal.dashboard') }}" class="btn btn-outline-secondary">Installer Portal</a>
+            <a href="{{ url_for('portal.logout') }}" class="btn btn-outline-danger">Logout</a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Installers</h5>
+                    <h2 class="mb-0">{{ total_installers }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white" style="background-color: #d4a574;">
+                <div class="card-body">
+                    <h5 class="card-title">Pending Approval</h5>
+                    <h2 class="mb-0">{{ pending_approval }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Approved</h5>
+                    <h2 class="mb-0">{{ approved_installers }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Inactive</h5>
+                    <h2 class="mb-0">{{ inactive_installers }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Installers Table -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title mb-3">All Installers</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Business Name</th>
+                            <th>ABN</th>
+                            <th>GST</th>
+                            <th>RFMS Supplier ID</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for installer in installers %}
+                        <tr>
+                            <td>
+                                <strong>{{ installer.name }}</strong>
+                                {% if installer.is_admin %}
+                                <span class="badge bg-danger ms-1">Admin</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ installer.email }}</td>
+                            <td>{{ installer.business_name or '-' }}</td>
+                            <td>{{ installer.abn or '-' }}</td>
+                            <td>
+                                {% if installer.gst_registered %}
+                                <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if installer.rfms_supplier_id %}
+                                <span class="badge bg-success">{{ installer.rfms_supplier_id }}</span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not installer.approved %}
+                                <span class="badge" style="background-color: #d4a574; color: #fff;">Pending</span>
+                                {% elif installer.active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ installer.created_at.strftime('%d %b %Y') if installer.created_at else '-' }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('portal.edit_installer', installer_id=installer.id) }}" 
+                                       class="btn btn-outline-primary" title="Edit">
+                                        <i class="fa fa-edit"></i>
+                                    </a>
+                                    {% if not installer.approved %}
+                                    <form method="post" action="{{ url_for('portal.approve_installer', installer_id=installer.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-outline-success" title="Approve">
+                                            <i class="fa fa-check"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

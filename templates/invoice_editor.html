@@ -12,20 +12,55 @@ New
     textarea[name="notes"] {
         text-transform: uppercase;
     }
+    /* Custom checkbox styling - green when checked */
+    #no_gst:checked {
+        background-color: #01998e !important;
+        border-color: #01998e !important;
+    }
+    #no_gst:focus {
+        border-color: #01998e !important;
+        box-shadow: 0 0 0 0.25rem rgba(1, 153, 142, 0.25) !important;
+    }
 </style>
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div class="d-flex align-items-center gap-3">
-            <img src="{{ url_for('static', filename='customcolor_logo_transparent_background.jpeg') }}" 
-                 alt="A to Z Flooring Solutions" 
-                 style="max-height: 60px; max-width: 200px;">
-            <div>
-                <h2 class="mb-0">Invoice {{ invoice.invoice_number }}</h2>
-                <p class="text-muted mb-0">Order {{ work_order.order_number }} • Job {{ work_order.job_number or 'N/A' }}</p>
+    <!-- Invoice/Order/Job, Sold To, and Ship To Information in one row -->
+    <div class="row mb-3 align-items-start">
+        <div class="col-md-4">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <label for="invoice_number" class="form-label mb-0" style="font-weight: bold;">Invoice Number:</label>
+                <div class="input-group" style="width: auto; min-width: 200px;">
+                    <input type="text" 
+                           id="invoice_number" 
+                           name="invoice_number" 
+                           class="form-control" 
+                           value="{{ invoice.invoice_number }}" 
+                           required>
+                    <span class="input-group-text" style="background-color: #f8f9fa;">
+                        <i class="fa fa-edit text-primary" title="Editable"></i>
+                    </span>
+                </div>
             </div>
+            <p class="text-muted mb-0">Order {{ work_order.order_number }} • Job {{ work_order.job_number or 'N/A' }}</p>
         </div>
-        <div>
-            <a href="{{ url_for('portal.dashboard') }}" class="btn btn-outline-secondary">Back to dashboard</a>
+        <div class="col-md-4">
+            {% if sold_to_details %}
+            <div class="mb-2">
+                <div class="fw-semibold small text-muted mb-1">SOLD TO:</div>
+                <div class="fw-semibold">{{ sold_to_details.name }}</div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-md-4">
+            {% if ship_to_details %}
+            <div class="mb-2">
+                <div class="fw-semibold small text-muted mb-1">SHIP TO:</div>
+                <div class="fw-semibold mb-1">{{ ship_to_details.name }}</div>
+                <div class="text-muted small" style="line-height: 1.4;">
+                    <div>{{ ship_to_details.street_address }}</div>
+                    <div>{{ ship_to_details.suburb }}</div>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -43,9 +78,10 @@ New
                     <table class="table align-middle" id="lines-table">
                         <thead>
                             <tr>
-                                <th>Description</th>
-                                <th style="width: 120px;">Quantity</th>
-                                <th style="width: 130px; text-align: center; padding-left: 30px;">Unit price</th>
+                                <th style="width: 100px;">Service Code</th>
+                                <th style="padding-left: 5px;">Description</th>
+                                <th style="width: 120px; padding-left: 50px;">Quantity</th>
+                                <th style="width: 130px; text-align: center; padding-left: 50px;">Unit price</th>
                                 <th style="width: 140px; text-align: right;">Line total</th>
                                 <th style="width: 40px;"></th>
                             </tr>
@@ -55,10 +91,22 @@ New
                             <tr>
                                 <td>
                                     <input type="hidden" name="line_id[]" value="{{ line.id }}">
+                                    {% if line.work_order_line and line.work_order_line.source_line_number %}
+                                        {% set source_num = line.work_order_line.source_line_number %}
+                                        {% if roll_item_numbers_map.get(source_num) or roll_item_numbers_map.get(source_num|string) %}
+                                            <span class="text-muted small">{{ roll_item_numbers_map.get(source_num) or roll_item_numbers_map.get(source_num|string) }}</span>
+                                        {% else %}
+                                            <span class="text-muted small">-</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted small">-</span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding-left: 5px;">
                                     <input type="text" class="form-control" name="description[]" value="{{ line.description }}" required>
                                 </td>
-                                <td><input type="number" step="0.01" min="0" class="form-control" name="quantity[]" value="{{ '%.2f'|format(line.quantity) }}" required></td>
-                                <td style="text-align: center; padding-left: 30px;"><input type="number" step="0.01" min="0" class="form-control" name="unit_price[]" value="{{ '%.2f'|format(line.unit_price) }}" required style="text-align: center;"></td>
+                                <td style="padding-left: 50px;"><input type="number" step="0.01" min="0" class="form-control" name="quantity[]" value="{{ '%.2f'|format(line.quantity) }}" required></td>
+                                <td style="text-align: center; padding-left: 50px;"><input type="number" step="0.01" min="0" class="form-control" name="unit_price[]" value="{{ '%.2f'|format(line.unit_price) }}" required style="text-align: center;"></td>
                                 <td class="fw-semibold line-total text-end">{{ '%.2f'|format(line.quantity * line.unit_price) }}</td>
                                 <td class="text-center" style="padding: 0.25rem;">
                                     <button type="button" class="btn btn-link text-danger p-0 remove-line" style="font-size: 0.875rem;"><i class="fa fa-trash"></i></button>
@@ -69,10 +117,13 @@ New
                             <tr>
                                 <td>
                                     <input type="hidden" name="line_id[]" value="">
+                                    <span class="text-muted small">-</span>
+                                </td>
+                                <td style="padding-left: 5px;">
                                     <input type="text" class="form-control" name="description[]" placeholder="Description" required>
                                 </td>
-                                <td><input type="number" step="0.01" min="0" class="form-control" name="quantity[]" value="0" required></td>
-                                <td style="text-align: center; padding-left: 30px;"><input type="number" step="0.01" min="0" class="form-control" name="unit_price[]" value="0" required style="text-align: center;"></td>
+                                <td style="padding-left: 50px;"><input type="number" step="0.01" min="0" class="form-control" name="quantity[]" value="0" required></td>
+                                <td style="text-align: center; padding-left: 50px;"><input type="number" step="0.01" min="0" class="form-control" name="unit_price[]" value="0" required style="text-align: center;"></td>
                                 <td class="fw-semibold line-total text-end">0.00</td>
                                 <td class="text-center" style="padding: 0.25rem;">
                                     <button type="button" class="btn btn-link text-danger p-0 remove-line" style="font-size: 0.875rem;"><i class="fa fa-trash"></i></button>
@@ -119,12 +170,35 @@ New
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Upload photos or documents</label>
-                    <input type="file" name="attachments" multiple class="form-control" accept="image/*,application/pdf">
-                    {% if invoice.attachments %}
-                    <div class="small text-muted mt-1">New attachments to upload: {{ invoice.attachments|length }}</div>
-                    {% endif %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label class="form-label mb-0">Upload photos or documents</label>
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="action" value="save" class="btn btn-outline-secondary btn-sm">Save draft</button>
+                            <button type="submit" name="action" value="submit" class="btn btn-primary btn-sm" id="submitInvoiceBtn" {% if not existing_installer_photos %}disabled title="Please upload at least one installer photo before submitting"{% endif %}>Submit invoice</button>
+                        </div>
+                    </div>
+                    <input type="file" name="attachments" multiple class="form-control" id="photoUploadInput" accept="image/*,application/pdf">
+                    <div class="small text-muted mt-1" id="photoStatusMessage">
+                        {% if existing_installer_photos %}
+                            <span class="text-success">✓ Installer photos available</span>
+                        {% else %}
+                            <span class="text-warning">⚠ Please upload at least one installer photo to submit</span>
+                        {% endif %}
+                    </div>
                 </div>
+                
+                {% if invoice.status == 'submitted' %}
+                <div class="mb-3">
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('portal.export_invoice_xero', invoice_id=invoice.id) }}" class="btn btn-outline-success btn-sm">
+                            <i class="fa fa-download me-2"></i>Export to Xero (CSV)
+                        </a>
+                        <a href="{{ url_for('portal.export_invoice_pdf', invoice_id=invoice.id) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fa fa-file-pdf me-2"></i>Download PDF
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
                 
                 {% if existing_installer_photos %}
                 <div class="mb-3">
@@ -135,32 +209,47 @@ New
                         <p class="mb-2 small">The following photos have already been uploaded to this order. You don't need to upload them again:</p>
                         <div class="row g-2">
                             {% for photo in existing_installer_photos %}
-                            <div class="col-md-3 col-sm-4 col-6">
-                                <div class="card border-info">
+                            <div class="col-lg-3 col-md-3 col-sm-6 col-6">
+                                <div class="card border-info h-100">
                                     <div class="card-body p-2 text-center">
                                         {% set photo_id = photo.get('id') or photo.get('attachmentId') or photo.get('attachment_id') %}
                                         {% set description = photo.get('description') or photo.get('name') or photo.get('title') or 'Photo' %}
                                         {% set file_ext = (photo.get('fileExtension') or photo.get('file_type') or '').lower() %}
                                         {% set is_image = file_ext in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'heif'] %}
                                         
-                                        {% if is_image and photo.get('fileData') %}
+                                        {% if is_image %}
+                                        {% if photo.get('fileData') %}
                                         <img src="data:image/{{ file_ext or 'jpeg' }};base64,{{ photo.fileData }}" 
                                              class="img-thumbnail mb-1" 
-                                             style="max-width: 100%; max-height: 100px; object-fit: contain; cursor: pointer;"
+                                             style="max-width: 100%; max-height: 150px; min-height: 150px; width: 100%; object-fit: cover; cursor: pointer;"
                                              alt="{{ description }}"
-                                             onclick="window.open('data:image/{{ file_ext or 'jpeg' }};base64,{{ photo.fileData }}', '_blank')">
-                                        {% elif is_image %}
-                                        <div class="text-center">
+                                             onclick="window.open('data:image/{{ file_ext or 'jpeg' }};base64,{{ photo.fileData }}', '_blank')"
+                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                        <div style="display: none; min-height: 150px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-image fa-3x text-muted"></i>
+                                        </div>
+                                        {% elif photo_id %}
+                                        <img src="{{ url_for('portal.get_attachment_thumbnail', attachment_id=photo_id) }}" 
+                                             class="img-thumbnail mb-1" 
+                                             style="max-width: 100%; max-height: 150px; min-height: 150px; width: 100%; object-fit: cover; cursor: pointer;"
+                                             alt="{{ description }}"
+                                             onclick="window.open('{{ url_for('portal.get_attachment_file', attachment_id=photo_id) }}', '_blank')"
+                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div style="display: none; min-height: 150px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center; flex-direction: column;">
                                             <i class="fas fa-image fa-3x text-muted mb-1"></i>
                                             <div class="small text-muted">Image</div>
                                         </div>
                                         {% else %}
-                                        <div class="text-center">
-                                            <i class="fas fa-file fa-3x text-muted mb-1"></i>
-                                            <div class="small text-muted">{{ file_ext.upper() or 'FILE' }}</div>
+                                        <div style="min-height: 150px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-image fa-3x text-muted"></i>
                                         </div>
                                         {% endif %}
-                                        <div class="small text-truncate" title="{{ description }}">
+                                        {% else %}
+                                        <div style="min-height: 150px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-file fa-3x text-muted"></i>
+                                        </div>
+                                        {% endif %}
+                                        <div class="small text-truncate mt-1" title="{{ description }}">
                                             {{ description[:30] }}{% if description|length > 30 %}...{% endif %}
                                         </div>
                                     </div>
@@ -171,22 +260,6 @@ New
                     </div>
                 </div>
                 {% endif %}
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex gap-2">
-                        {% if invoice.status == 'submitted' %}
-                        <a href="{{ url_for('portal.export_invoice_xero', invoice_id=invoice.id) }}" class="btn btn-outline-success">
-                            <i class="fa fa-download me-2"></i>Export to Xero (CSV)
-                        </a>
-                        <a href="{{ url_for('portal.export_invoice_pdf', invoice_id=invoice.id) }}" class="btn btn-outline-primary">
-                            <i class="fa fa-file-pdf me-2"></i>Download PDF
-                        </a>
-                        {% endif %}
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button type="submit" name="action" value="save" class="btn btn-outline-secondary">Save draft</button>
-                        <button type="submit" name="action" value="submit" class="btn btn-primary">Submit invoice</button>
-                    </div>
-                </div>
             </form>
         </div>
     </div>
@@ -270,10 +343,13 @@ New
         row.innerHTML = `
             <td>
                 <input type="hidden" name="line_id[]" value="">
+                <span class="text-muted small">-</span>
+            </td>
+            <td style="padding-left: 5px;">
                 <input type="text" class="form-control" name="description[]" placeholder="Description" required>
             </td>
-            <td><input type="number" step="0.01" min="0" class="form-control" name="quantity[]" value="0" required></td>
-            <td style="text-align: center; padding-left: 30px;"><input type="number" step="0.01" min="0" class="form-control" name="unit_price[]" value="0" required style="text-align: center;"></td>
+            <td style="padding-left: 50px;"><input type="number" step="0.01" min="0" class="form-control" name="quantity[]" value="0" required></td>
+            <td style="text-align: center; padding-left: 50px;"><input type="number" step="0.01" min="0" class="form-control" name="unit_price[]" value="0" required style="text-align: center;"></td>
             <td class="fw-semibold line-total text-end">0.00</td>
             <td class="text-center" style="padding: 0.25rem;">
                 <button type="button" class="btn btn-link text-danger p-0 remove-line" style="font-size: 0.875rem;"><i class="fa fa-trash"></i></button>
@@ -371,7 +447,48 @@ New
     } else {
         convertExistingInputs();
     }
+    
+    // Handle photo upload validation for submit button
+    const submitInvoiceBtn = document.getElementById('submitInvoiceBtn');
+    const photoUploadInput = document.getElementById('photoUploadInput');
+    const photoStatusMessage = document.getElementById('photoStatusMessage');
+    const hasExistingPhotos = {{ 'true' if existing_installer_photos else 'false' }};
+    
+    function updateSubmitButtonState() {
+        const hasNewPhotos = photoUploadInput && photoUploadInput.files && photoUploadInput.files.length > 0;
+        const canSubmit = hasExistingPhotos || hasNewPhotos;
+        
+        if (submitInvoiceBtn) {
+            submitInvoiceBtn.disabled = !canSubmit;
+            if (canSubmit) {
+                submitInvoiceBtn.title = '';
+                submitInvoiceBtn.classList.remove('btn-secondary');
+                submitInvoiceBtn.classList.add('btn-primary');
+            } else {
+                submitInvoiceBtn.title = 'Please upload at least one installer photo before submitting';
+                submitInvoiceBtn.classList.remove('btn-primary');
+                submitInvoiceBtn.classList.add('btn-secondary');
+            }
+        }
+        
+        if (photoStatusMessage) {
+            if (canSubmit) {
+                photoStatusMessage.innerHTML = '<span class="text-success">✓ Installer photos available</span>';
+            } else {
+                photoStatusMessage.innerHTML = '<span class="text-warning">⚠ Please upload at least one installer photo to submit</span>';
+            }
+        }
+    }
+    
+    // Update on file selection
+    if (photoUploadInput) {
+        photoUploadInput.addEventListener('change', updateSubmitButtonState);
+    }
+    
+    // Initialize state on page load
+    updateSubmitButtonState();
 </script>
 {% endblock %}
 templates/portal_dashboard.html
 New
+

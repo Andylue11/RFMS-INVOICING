@@ -1,5 +1,6 @@
 import os
 import io
+import base64
 from datetime import datetime, timedelta
 from functools import wraps
 from typing import List, Dict, Any
@@ -229,6 +230,119 @@ def _dates_match_fuzzy(date1_str: str, date2_str: str, tolerance_days: int = 2) 
     return diff <= tolerance_days
 
 
+def _parse_job_lines(job_details: Dict[str, Any], order_lines: List[Dict[str, Any]] = None, install_date: str = None) -> List[Dict[str, Any]]:
+    """
+    Parse lines from job payload (from /order/jobs endpoint).
+    Job lines are more specific to the booking and should be used if available.
+    Matches job lines to order lines to get pricing information.
+    
+    Args:
+        job_details: Job details dictionary from /order/jobs endpoint (the primary_job object)
+        order_lines: Order lines from order payload (for pricing information)
+        install_date: Optional install date for filtering (should match job's scheduledStart)
+    """
+    if not isinstance(job_details, dict):
+        return []
+    
+    job_lines = job_details.get('lines', [])
+    if not isinstance(job_lines, list) or not job_lines:
+        return []
+    
+    current_app.logger.info(f"_parse_job_lines: Found {len(job_lines)} lines in job payload")
+    
+    # Get job scheduled date for filtering
+    job_scheduled_date = job_details.get('scheduledStart') or job_details.get('scheduledEnd')
+    
+    # Create a mapping of order lines by lineNumber and styleName for matching
+    order_lines_map = {}
+    if order_lines:
+        for order_line in order_lines:
+            line_num = order_line.get('lineNumber')
+            style_name = (order_line.get('styleName') or '').strip().upper()
+            # Map by line number (primary) and style name (fallback)
+            if line_num:
+                order_lines_map[str(line_num)] = order_line
+            if style_name and line_num:
+                order_lines_map[f"{style_name}_{line_num}"] = order_line
+    
+    parsed_lines = []
+    for job_line in job_lines:
+        if not isinstance(job_line, dict):
+            continue
+        
+        line_number = job_line.get('lineNumber')
+        style_name = (job_line.get('styleName') or '').strip()
+        color_name = (job_line.get('colorName') or '').strip()
+        quantity = float(job_line.get('quantity') or job_line.get('length') or 0)
+        units = job_line.get('units', '')
+        
+        # Find matching order line for pricing
+        order_line = None
+        if line_number:
+            order_line = order_lines_map.get(str(line_number))
+        if not order_line and style_name:
+            # Try to match by style name
+            style_upper = style_name.upper()
+            for key, ord_line in order_lines_map.items():
+                if ord_line.get('styleName', '').upper() == style_upper:
+                    order_line = ord_line
+                    break
+        
+        # Build description
+        if style_name and color_name:
+            description = f"{style_name} {color_name}".strip()
+        elif style_name:
+            description = style_name
+        elif color_name:
+            description = color_name
+        else:
+            description = job_line.get('material') or 'Service Line'
+        
+        # Get pricing from order line (if found), otherwise default to 0
+        roll_item_number = ''
+        if order_line:
+            unit_price = float(order_line.get('unitCost') or order_line.get('unitPrice') or 0)
+            product_code = order_line.get('productCode') or ''
+            roll_item_number = order_line.get('rollItemNumber') or order_line.get('roll_item_number') or ''
+        else:
+            unit_price = 0.0
+            product_code = ''
+            current_app.logger.warning(f"_parse_job_lines: No matching order line found for job line {line_number} ({style_name})")
+        
+        # Check if this is an installer invoice line (product codes 38-49 and 51)
+        # If we have product code, check it; otherwise try to infer from style name
+        is_installer_line = False
+        if product_code:
+            is_installer_line = _is_installer_invoice_line(order_line) if order_line else False
+        else:
+            # Try to infer from style name (installer invoice lines are typically labor/service)
+            style_upper = style_name.upper()
+            installer_keywords = ['INSTALL', 'LABOR', 'TRAVEL', 'DUMP', 'TAKE UP', 'GLUE', 'NEGOTIATED']
+            if any(keyword in style_upper for keyword in installer_keywords):
+                is_installer_line = True
+        
+        if not is_installer_line:
+            current_app.logger.debug(f"_parse_job_lines: Skipping job line {line_number} - not an installer invoice line")
+            continue
+        
+        # Calculate line total
+        total = quantity * unit_price
+        
+        parsed_lines.append({
+            'source_line_number': int(line_number) if line_number else 0,
+            'product_code': product_code,
+            'roll_item_number': roll_item_number,
+            'description': description,
+            'quantity': quantity,
+            'unit_price': unit_price,
+            'extended_price': total,
+            'tax_rate': 0.0,  # Lines are non-tax for installer invoices
+        })
+    
+    current_app.logger.info(f"_parse_job_lines: Parsed {len(parsed_lines)} installer invoice lines from job payload")
+    return parsed_lines
+
+
 def _parse_order_lines(order_details: Dict[str, Any], install_date: str = None) -> List[Dict[str, Any]]:
     """
     Parse order lines from RFMS order details, matching the pattern used in app_origin.py.
@@ -368,10 +482,13 @@ def _parse_order_lines(order_details: Dict[str, Any], install_date: str = None) 
                 description = item.get('productDescription') or item.get('productName') or 'Service Line'
         line_number = item.get('lineNumber') or item.get('line_number') or (index + 1)
         product_code = item.get('productCode') or item.get('productNumber') or item.get('product_code') or ''
+        # Get rollItemNumber for Service Code display
+        roll_item_number = item.get('rollItemNumber') or item.get('roll_item_number') or ''
         
         lines.append({
             'source_line_number': int(line_number) if line_number else (index + 1),
             'product_code': product_code,
+            'roll_item_number': roll_item_number,
             'description': description,
             'quantity': qty,
             'unit_price': unit_price,
@@ -383,14 +500,59 @@ def _parse_order_lines(order_details: Dict[str, Any], install_date: str = None) 
     return lines
 
 
-def _sync_work_order_lines(work_order: WorkOrder, order_details: Dict[str, Any], install_date: str = None):
-    lines = _parse_order_lines(order_details, install_date=install_date)
+def _sync_work_order_lines(work_order: WorkOrder, order_details: Dict[str, Any] = None, job_details: Dict[str, Any] = None, install_date: str = None):
+    """
+    Sync work order lines from either job payload (preferred) or order payload (fallback).
+    
+    IMPORTANT: If job_details exists and has lines, ONLY use job lines (don't fall back to order lines).
+    This ensures we only show lines that are actually in the scheduled booking, not all order lines.
+    
+    Args:
+        work_order: WorkOrder object to sync lines for
+        order_details: Order details from get_order() endpoint
+        job_details: Job details from get_order_jobs() endpoint (primary_job object)
+        install_date: Optional install date for filtering
+    """
+    lines = []
+    
+    # Try to use job lines first (more specific to the booking)
+    # If job_details exists, we should ONLY use job lines, even if none match installer codes
+    job_lines_exist = False
+    if job_details:
+        job_lines_raw = job_details.get('lines', [])
+        if isinstance(job_lines_raw, list) and len(job_lines_raw) > 0:
+            job_lines_exist = True
+            current_app.logger.info(f"_sync_work_order_lines: Job has {len(job_lines_raw)} lines - will ONLY use job lines (no fallback to order lines)")
+            # Get order lines for pricing information only
+            order_lines_result = order_details.get('result', {}) if order_details else {}
+            order_lines_list = order_lines_result.get('lines', []) if isinstance(order_lines_result, dict) else []
+            if not order_lines_list:
+                detail = order_details.get('detail', {}) if order_details else {}
+                order_lines_list = detail.get('lines', []) if isinstance(detail, dict) else []
+            
+            lines = _parse_job_lines(job_details, order_lines=order_lines_list, install_date=install_date)
+            current_app.logger.info(f"_sync_work_order_lines: Parsed {len(lines)} installer invoice lines from job payload")
+    
+    # Fall back to order lines ONLY if job_details doesn't exist or has no lines
+    if not job_lines_exist and order_details:
+        current_app.logger.info("_sync_work_order_lines: No job lines found, falling back to parsing lines from order payload")
+        lines = _parse_order_lines(order_details, install_date=install_date)
+    
     if not lines:
+        current_app.logger.warning("_sync_work_order_lines: No lines found in job or order payload")
+        # Delete all existing lines if we have no new lines
+        for existing_line in list(work_order.lines):
+            db.session.delete(existing_line)
         return
 
-    existing_by_source = {
-        line.source_line_number: line for line in work_order.lines if line.source_line_number is not None
-    }
+    # Delete all existing work order lines first to ensure we only have lines from the current sync
+    # This is important because if we previously synced with order lines (that included lines not in the job),
+    # those old lines would remain if we didn't delete them
+    for existing_line in list(work_order.lines):
+        db.session.delete(existing_line)
+    db.session.flush()  # Flush deletions before creating new lines
+
+    existing_by_source = {}  # Start fresh since we deleted all existing lines
 
     for line_data in lines:
         source_num = line_data.get('source_line_number')
@@ -868,14 +1030,64 @@ def profile():
 def dashboard():
     installer = current_installer()
     
-    # Get existing work orders and invoices
+    # Get existing work orders and invoices (limit to 5 most recent for dashboard)
     work_orders = WorkOrder.query.filter(
         (WorkOrder.installer_id == installer.id) | (WorkOrder.crew_code == installer.crew_code)
-    ).order_by(WorkOrder.created_at.desc()).all()
+    ).order_by(WorkOrder.created_at.desc()).limit(5).all()
 
     invoices = InstallerInvoice.query.filter_by(installer_id=installer.id).order_by(
         InstallerInvoice.updated_at.desc()
+    ).limit(5).all()
+    
+    # Get all submitted invoices for pending orders check (not limited to 5)
+    all_submitted_invoices = InstallerInvoice.query.filter_by(
+        installer_id=installer.id, 
+        status='submitted'
     ).all()
+
+    # Update work orders with job status from scheduler using /order/jobs endpoint (definitive method)
+    # This is more reliable than searching by date range
+    if installer.crew_code:
+        try:
+            # Update work orders with job info using /order/jobs endpoint
+            # This is more reliable than searching by date range
+            for wo in work_orders:
+                if wo.order_number:
+                    try:
+                        jobs_response = rfms_client.get_order_jobs(wo.order_number)
+                        scheduled_jobs = jobs_response.get('detail', [])
+                        
+                        if scheduled_jobs and isinstance(scheduled_jobs, list) and len(scheduled_jobs) > 0:
+                            primary_job = scheduled_jobs[0]
+                            
+                            # Update job_number (job ID)
+                            job_id = primary_job.get('jobId') or primary_job.get('id')
+                            if job_id:
+                                wo.job_number = str(job_id)
+                            
+                            # Update status
+                            job_status = primary_job.get('jobStatus') or primary_job.get('status')
+                            if job_status:
+                                wo.status = job_status
+                            
+                            # Update scheduled_start date
+                            scheduled_date_str = primary_job.get('scheduledStart') or primary_job.get('scheduledEnd')
+                            if scheduled_date_str:
+                                try:
+                                    # Handle YYYYMMDD format
+                                    if len(scheduled_date_str) == 8 and scheduled_date_str.isdigit():
+                                        wo.scheduled_start = datetime.strptime(scheduled_date_str, '%Y%m%d')
+                                    # Handle YYYY-MM-DD format
+                                    elif '-' in scheduled_date_str:
+                                        wo.scheduled_start = datetime.strptime(scheduled_date_str.split()[0], '%Y-%m-%d')
+                                except (ValueError, TypeError):
+                                    pass
+                    except Exception as e:
+                        current_app.logger.warning(f"Failed to get job details for order {wo.order_number}: {e}")
+            
+            db.session.commit()
+        except Exception as exc:
+            current_app.logger.warning(f"Failed to update work orders with scheduler info: {exc}")
 
     # Find pending orders (delivered/job-costed status) that need invoicing
     pending_orders = []
@@ -899,8 +1111,8 @@ def dashboard():
             # Filter to orders that don't have submitted invoices
             submitted_order_numbers = {
                 inv.work_order.order_number 
-                for inv in invoices 
-                if inv.status == 'submitted' and inv.work_order and inv.work_order.order_number
+                for inv in all_submitted_invoices 
+                if inv.work_order and inv.work_order.order_number
             }
             
             for job in jobs:
@@ -1024,81 +1236,73 @@ def create_invoice_from_order():
         work_order.installer_id = installer.id
         work_order.crew_code = installer.crew_code
         
-        # Extract job ID from multiple possible locations in RFMS payload
-        job_number = None
+        # Extract job ID, scheduled date, and job status using /order/jobs/{order_number} endpoint
+        # This is the definitive way to get job information (as per RFMS-BUILDERS implementation)
         job_id = None
+        scheduled_start = None
+        job_status = None
         
-        # Try result.jobNumber first (most common location)
-        if isinstance(order_result, dict):
-            job_number = order_result.get('jobNumber') or order_result.get('jobNum')
-            job_id = order_result.get('jobId')
-        
-        # Fallback to order_data locations
-        if not job_number and isinstance(order_data, dict):
-            job_number = order_data.get('jobNumber') or order_data.get('jobNum')
-            if not job_id:
-                job_id = order_data.get('jobId')
-        
-        # Fallback to top-level order_details
-        if not job_number:
-            job_number = order_details.get('jobNumber') or order_details.get('jobNum')
-            if not job_id:
-                job_id = order_details.get('jobId')
-        
-        # If job ID not found in order payload, search for jobs by order number
-        if not job_id and not job_number:
-            current_app.logger.info(f"Job ID not found in order payload, searching scheduler for order {order_number}")
-            try:
-                # Search for jobs in the last 8 weeks (as per user requirement)
-                from datetime import timedelta
-                end_date = datetime.utcnow().date()
-                start_date = end_date - timedelta(weeks=8)
-                start_str = start_date.strftime('%m-%d-%Y')
-                end_str = end_date.strftime('%m-%d-%Y')
+        try:
+            jobs_response = rfms_client.get_order_jobs(order_number)
+            scheduled_jobs = jobs_response.get('detail', [])
+            
+            if scheduled_jobs and isinstance(scheduled_jobs, list) and len(scheduled_jobs) > 0:
+                primary_job = scheduled_jobs[0]
                 
-                # Search for jobs with this order number
-                jobs_result = rfms_client.find_jobs_by_date_range(
-                    start_str,
-                    end_str,
-                    crews=[installer.crew_code] if installer.crew_code else None
-                )
+                # Extract job ID
+                job_id = primary_job.get('jobId') or primary_job.get('id')
                 
-                # Extract jobs from response
-                jobs = []
-                if isinstance(jobs_result, dict):
-                    detail = jobs_result.get('detail', [])
-                    if isinstance(detail, list):
-                        jobs = detail
-                    elif isinstance(detail, dict) and 'jobs' in detail:
-                        jobs = detail.get('jobs', [])
+                # Extract scheduled date (format: YYYYMMDD, convert to datetime)
+                scheduled_date_str = primary_job.get('scheduledStart') or primary_job.get('scheduledEnd')
+                if scheduled_date_str:
+                    try:
+                        # Handle YYYYMMDD format
+                        if len(scheduled_date_str) == 8 and scheduled_date_str.isdigit():
+                            scheduled_start = datetime.strptime(scheduled_date_str, '%Y%m%d')
+                        # Handle YYYY-MM-DD format
+                        elif '-' in scheduled_date_str:
+                            scheduled_start = datetime.strptime(scheduled_date_str.split()[0], '%Y-%m-%d')
+                        else:
+                            scheduled_start = datetime.strptime(scheduled_date_str.split()[0], '%Y-%m-%d')
+                    except (ValueError, TypeError) as e:
+                        current_app.logger.warning(f"Could not parse scheduled date '{scheduled_date_str}': {e}")
                 
-                # Find job matching this order number
-                for job in jobs:
-                    job_order_number = job.get('documentNumber') or job.get('orderNumber') or job.get('orderNum')
-                    if job_order_number and job_order_number.upper() == order_number.upper():
-                        job_id = job.get('jobId') or job.get('id')
-                        job_number = job.get('jobNumber') or job.get('jobNum')
-                        current_app.logger.info(f"Found job ID {job_id} for order {order_number} from scheduler search")
-                        break
+                # Extract job status
+                job_status = primary_job.get('jobStatus') or primary_job.get('status')
                 
-                if not job_id:
-                    current_app.logger.warning(f"No job found in scheduler for order {order_number}")
-            except Exception as e:
-                current_app.logger.warning(f"Failed to search scheduler for job ID: {e}")
+                current_app.logger.info(f"Found job ID {job_id}, scheduled date {scheduled_start}, status {job_status} for order {order_number}")
+            else:
+                current_app.logger.info(f"No scheduled jobs found for order {order_number}")
+        except Exception as e:
+            current_app.logger.warning(f"Failed to get job details for order {order_number}: {e}")
         
-        # Store job ID or job number (prefer job ID)
+        # Store job ID, scheduled date, and status
         if job_id:
             work_order.job_number = str(job_id)
-            current_app.logger.info(f"Stored job ID '{job_id}' for order {order_number}")
-        elif job_number:
-            work_order.job_number = str(job_number)
-            current_app.logger.info(f"Stored job number '{job_number}' for order {order_number}")
-        else:
-            current_app.logger.warning(f"No job ID or job number found for order {order_number}")
+        if scheduled_start:
+            work_order.scheduled_start = scheduled_start
+        if job_status:
+            work_order.status = job_status
+        
+        # Ensure job_number is saved to database
+        db.session.flush()
+        
+        # Get job details for line extraction (if job exists)
+        job_details_for_lines = None
+        if job_id:
+            try:
+                jobs_response = rfms_client.get_order_jobs(order_number)
+                scheduled_jobs = jobs_response.get('detail', [])
+                if scheduled_jobs and isinstance(scheduled_jobs, list) and len(scheduled_jobs) > 0:
+                    job_details_for_lines = scheduled_jobs[0]
+                    current_app.logger.info(f"Retrieved job details with {len(job_details_for_lines.get('lines', []))} lines for line extraction")
+            except Exception as e:
+                current_app.logger.warning(f"Could not get job details for line extraction: {e}")
         
         # Sync work order lines (with optional install date filtering)
+        # Prefer job lines over order lines (job lines are more specific to the booking)
         current_app.logger.info(f"Syncing work order lines for order {order_number}" + (f" with install date {install_date}" if install_date else ""))
-        _sync_work_order_lines(work_order, order_details, install_date=install_date)
+        _sync_work_order_lines(work_order, order_details=order_details, job_details=job_details_for_lines, install_date=install_date)
         db.session.flush()
         
         # Refresh work_order to ensure lines are loaded
@@ -1158,7 +1362,6 @@ def create_invoice_from_order():
         
         db.session.commit()
         
-        flash(f'Invoice created for order {order_number}.', 'success')
         return redirect(url_for('portal.edit_invoice', work_order_id=work_order.id))
         
     except Exception as exc:
@@ -1249,6 +1452,11 @@ def edit_invoice(work_order_id: int):
         unit_prices = request.form.getlist('unit_price[]')
         line_ids = request.form.getlist('line_id[]')
 
+        # Update invoice number if provided
+        new_invoice_number = request.form.get('invoice_number', '').strip()
+        if new_invoice_number:
+            invoice.invoice_number = new_invoice_number.upper()
+        
         invoice.notes = request.form.get('notes')
 
         updated_lines: List[InvoiceLine] = []
@@ -1329,6 +1537,23 @@ def edit_invoice(work_order_id: int):
 
         action = request.form.get('action')
         if action == 'submit':
+            # Validate that installer photos exist (either existing from RFMS or newly uploaded)
+            existing_photos = []
+            if work_order.order_number:
+                if work_order.order_payload:
+                    existing_photos = _get_installer_photos_from_order(work_order.order_payload)
+                elif work_order.order_number:
+                    try:
+                        order_details = rfms_client.get_order(work_order.order_number, include_attachments=True)
+                        existing_photos = _get_installer_photos_from_order(order_details)
+                    except Exception as exc:
+                        current_app.logger.warning(f"Failed to check existing photos for order {work_order.order_number}: {exc}")
+            
+            if not existing_photos and not uploaded_files:
+                flash('Please upload at least one installer photo before submitting the invoice.', 'warning')
+                db.session.rollback()
+                return redirect(url_for('portal.edit_invoice', work_order_id=work_order.id))
+            
             invoice.status = 'submitted'
             invoice.submitted_at = datetime.utcnow()
             
@@ -1363,17 +1588,97 @@ def edit_invoice(work_order_id: int):
         db.session.commit()
         return redirect(url_for('portal.edit_invoice', work_order_id=work_order.id))
 
+    # Refresh work_order to ensure job_number is loaded from database
+    db.session.refresh(work_order)
+    # Also query directly to ensure we have the latest job_number
+    work_order = WorkOrder.query.get(work_order.id)
+    current_app.logger.info(f"Displaying invoice editor - Order: {work_order.order_number}, Job Number: {work_order.job_number}")
+
     # Fetch existing installer photos from RFMS order
     existing_installer_photos = []
+    order_details_for_customer = None
     if work_order.order_number and work_order.order_payload:
         existing_installer_photos = _get_installer_photos_from_order(work_order.order_payload)
+        order_details_for_customer = work_order.order_payload
     elif work_order.order_number:
         # Fetch fresh order data if not in payload
         try:
             order_details = rfms_client.get_order(work_order.order_number, include_attachments=True)
             existing_installer_photos = _get_installer_photos_from_order(order_details)
+            order_details_for_customer = order_details
         except Exception as exc:
             current_app.logger.warning(f"Failed to fetch installer photos for order {work_order.order_number}: {exc}")
+    
+    # Extract customer details (Sold To and Ship To) and rollItemNumber mapping from order payload
+    sold_to_details = None
+    ship_to_details = None
+    roll_item_numbers_map = {}  # Map source_line_number to rollItemNumber
+    if order_details_for_customer:
+        order_result = order_details_for_customer.get('result', {})
+        
+        # Extract rollItemNumber mapping from order lines (do this first)
+        order_lines = order_result.get('lines', [])
+        for order_line in order_lines:
+            line_num = order_line.get('lineNumber')
+            roll_item_num = order_line.get('rollItemNumber') or ''
+            if line_num and roll_item_num:
+                # Store with both int and str keys to handle type mismatches
+                roll_item_numbers_map[int(line_num)] = roll_item_num
+                roll_item_numbers_map[str(line_num)] = roll_item_num
+        
+        # Extract Sold To details
+        sold_to = order_result.get('soldTo', {})
+        if sold_to:
+            # Build sold to name
+            sold_to_name_parts = []
+            if sold_to.get('businessName'):
+                sold_to_name_parts.append(sold_to.get('businessName'))
+            if sold_to.get('firstName'):
+                sold_to_name_parts.append(sold_to.get('firstName'))
+            if sold_to.get('lastName'):
+                sold_to_name_parts.append(sold_to.get('lastName'))
+            sold_to_name = ' '.join(sold_to_name_parts) if sold_to_name_parts else 'N/A'
+            
+            sold_to_details = {
+                'name': sold_to_name,
+            }
+        
+        # Extract Ship To details
+        ship_to = order_result.get('shipTo', {})
+        if ship_to:
+            # Build ship to name
+            ship_to_name_parts = []
+            if ship_to.get('businessName'):
+                ship_to_name_parts.append(ship_to.get('businessName'))
+            if ship_to.get('firstName'):
+                ship_to_name_parts.append(ship_to.get('firstName'))
+            if ship_to.get('lastName'):
+                ship_to_name_parts.append(ship_to.get('lastName'))
+            ship_to_name = ' '.join(ship_to_name_parts) if ship_to_name_parts else 'N/A'
+            
+            # Build address - split into street address and suburb
+            street_address_parts = []
+            if ship_to.get('address1'):
+                street_address_parts.append(ship_to.get('address1'))
+            if ship_to.get('address2'):
+                street_address_parts.append(ship_to.get('address2'))
+            street_address = ', '.join(street_address_parts) if street_address_parts else 'N/A'
+            
+            # Build suburb line (city, state, postcode)
+            suburb_parts = []
+            if ship_to.get('city'):
+                suburb_parts.append(ship_to.get('city'))
+            if ship_to.get('state'):
+                suburb_parts.append(ship_to.get('state'))
+            if ship_to.get('postalCode'):
+                suburb_parts.append(ship_to.get('postalCode'))
+            suburb = ' '.join(suburb_parts) if suburb_parts else 'N/A'
+            
+            ship_to_details = {
+                'name': ship_to_name,
+                'street_address': street_address,
+                'suburb': suburb,
+            }
 
     return render_template(
         'invoice_editor.html',
@@ -1381,7 +1686,196 @@ def edit_invoice(work_order_id: int):
         work_order=work_order,
         invoice=invoice,
         existing_installer_photos=existing_installer_photos,
+        sold_to_details=sold_to_details,
+        ship_to_details=ship_to_details,
+        roll_item_numbers_map=roll_item_numbers_map,
     )
+
+
+@portal_bp.route('/attachment-thumbnail/<int:attachment_id>')
+@login_required
+def get_attachment_thumbnail(attachment_id: int):
+    """Get a thumbnail preview of an attachment."""
+    try:
+        # Get attachment data from RFMS
+        attachment_data = rfms_client.get_attachment(attachment_id)
+        
+        # Handle different response structures to get file data
+        file_data_b64 = None
+        
+        if isinstance(attachment_data, dict):
+            detail = attachment_data.get('detail')
+            if isinstance(detail, str):
+                file_data_b64 = detail
+            elif isinstance(detail, dict):
+                file_data_b64 = detail.get('fileData') or detail.get('data') or detail.get('file')
+            
+            if not file_data_b64:
+                file_data_b64 = (attachment_data.get('fileData') or 
+                                attachment_data.get('data') or
+                                attachment_data.get('file'))
+        
+        if not file_data_b64:
+            from flask import abort
+            abort(404, 'No file data found')
+        
+        # Decode base64 data
+        try:
+            file_bytes = base64.b64decode(file_data_b64)
+        except Exception as e:
+            current_app.logger.error(f"Failed to decode attachment {attachment_id}: {e}")
+            from flask import abort
+            abort(500, 'Failed to decode attachment')
+        
+        # Determine content type
+        file_extension = None
+        if isinstance(attachment_data, dict):
+            file_extension = (attachment_data.get('fileExtension') or 
+                            attachment_data.get('extension') or 
+                            attachment_data.get('file_extension') or '')
+        
+        # Determine MIME type
+        if file_extension:
+            file_extension = file_extension.lstrip('.').lower()
+            mime_types = {
+                'jpg': 'image/jpeg',
+                'jpeg': 'image/jpeg',
+                'png': 'image/png',
+                'gif': 'image/gif',
+                'webp': 'image/webp',
+                'bmp': 'image/bmp',
+                'pdf': 'application/pdf',
+            }
+            content_type = mime_types.get(file_extension, 'application/octet-stream')
+        else:
+            content_type = 'image/jpeg'  # Default
+        
+        return send_file(
+            io.BytesIO(file_bytes),
+            mimetype=content_type,
+            as_attachment=False
+        )
+        
+    except Exception as exc:
+        current_app.logger.error(f"Failed to get attachment thumbnail {attachment_id}: {exc}", exc_info=True)
+        from flask import abort
+        abort(500, f'Error retrieving attachment: {str(exc)}')
+
+
+@portal_bp.route('/attachment-file/<int:attachment_id>')
+@login_required
+def get_attachment_file(attachment_id: int):
+    """Get the full attachment file."""
+    try:
+        # Get attachment data from RFMS
+        attachment_data = rfms_client.get_attachment(attachment_id)
+        
+        # Handle different response structures to get file data
+        file_data_b64 = None
+        
+        if isinstance(attachment_data, dict):
+            detail = attachment_data.get('detail')
+            if isinstance(detail, str):
+                file_data_b64 = detail
+            elif isinstance(detail, dict):
+                file_data_b64 = detail.get('fileData') or detail.get('data') or detail.get('file')
+            
+            if not file_data_b64:
+                file_data_b64 = (attachment_data.get('fileData') or 
+                                attachment_data.get('data') or
+                                attachment_data.get('file'))
+        
+        if not file_data_b64:
+            from flask import abort
+            abort(404, 'No file data found')
+        
+        # Decode base64 data
+        try:
+            file_bytes = base64.b64decode(file_data_b64)
+        except Exception as e:
+            current_app.logger.error(f"Failed to decode attachment {attachment_id}: {e}")
+            from flask import abort
+            abort(500, 'Failed to decode attachment')
+        
+        # Get filename and content type
+        filename = 'attachment'
+        file_extension = None
+        if isinstance(attachment_data, dict):
+            filename = (attachment_data.get('name') or 
+                       attachment_data.get('filename') or 
+                       attachment_data.get('description') or 
+                       'attachment')
+            file_extension = (attachment_data.get('fileExtension') or 
+                            attachment_data.get('extension') or 
+                            attachment_data.get('file_extension') or '')
+        
+        if file_extension:
+            file_extension = file_extension.lstrip('.').lower()
+            if not filename.endswith(f'.{file_extension}'):
+                filename = f"{filename}.{file_extension}"
+        
+        # Determine MIME type
+        mime_types = {
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'gif': 'image/gif',
+            'webp': 'image/webp',
+            'bmp': 'image/bmp',
+            'pdf': 'application/pdf',
+        }
+        content_type = mime_types.get(file_extension, 'application/octet-stream') if file_extension else 'application/octet-stream'
+        
+        return send_file(
+            io.BytesIO(file_bytes),
+            mimetype=content_type,
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as exc:
+        current_app.logger.error(f"Failed to get attachment file {attachment_id}: {exc}", exc_info=True)
+        from flask import abort
+        abort(500, f'Error retrieving attachment: {str(exc)}')
+
+
+@portal_bp.route('/work-orders/<int:work_order_id>/delete', methods=['POST'])
+@login_required
+def delete_work_order(work_order_id: int):
+    """Delete a work order and its associated invoice."""
+    installer = current_installer()
+    work_order = WorkOrder.query.get_or_404(work_order_id)
+    
+    # Check permissions
+    if work_order.installer_id != installer.id and work_order.crew_code != installer.crew_code:
+        flash('You do not have permission to delete this work order.', 'danger')
+        return redirect(url_for('portal.dashboard'))
+    
+    # Delete associated invoice and its lines/attachments
+    if work_order.invoice:
+        invoice = work_order.invoice
+        
+        # Delete invoice lines
+        for line in invoice.lines:
+            db.session.delete(line)
+        
+        # Delete invoice attachments
+        for attachment in invoice.attachments:
+            db.session.delete(attachment)
+        
+        # Delete the invoice
+        db.session.delete(invoice)
+    
+    # Delete work order lines
+    for line in work_order.lines:
+        db.session.delete(line)
+    
+    # Delete the work order
+    db.session.delete(work_order)
+    db.session.commit()
+    
+    flash(f'Work order {work_order.order_number} and its invoice have been deleted.', 'success')
+    return redirect(url_for('portal.dashboard'))
 
 
 @portal_bp.route('/invoices/<int:invoice_id>/export/xero', methods=['GET'])
@@ -1610,6 +2104,305 @@ def export_invoice_pdf(invoice_id: int):
         current_app.logger.error(f"Failed to generate PDF: {exc}", exc_info=True)
         flash('Failed to generate PDF. Please try again.', 'danger')
         return redirect(url_for('portal.edit_invoice', work_order_id=invoice.work_order_id))
+
+
+@portal_bp.route('/export-invoices', methods=['GET', 'POST'])
+@login_required
+def export_invoices():
+    """Export invoices page - allows selection and bulk export."""
+    installer = current_installer()
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        selected_invoice_ids = request.form.getlist('invoice_ids')
+        
+        if not selected_invoice_ids:
+            flash('Please select at least one invoice to export.', 'warning')
+            return redirect(url_for('portal.export_invoices'))
+        
+        # Get selected invoices
+        invoices = InstallerInvoice.query.filter(
+            InstallerInvoice.id.in_(selected_invoice_ids),
+            InstallerInvoice.installer_id == installer.id
+        ).all()
+        
+        if not invoices:
+            flash('No valid invoices selected.', 'danger')
+            return redirect(url_for('portal.export_invoices'))
+        
+        if action == 'export_xero':
+            # Export to Xero CSV
+            return _export_invoices_xero(invoices, installer)
+        elif action == 'export_pdf_email':
+            # Export to PDF and email
+            email_address = request.form.get('email_address', '').strip()
+            if not email_address:
+                flash('Please provide an email address.', 'warning')
+                return redirect(url_for('portal.export_invoices'))
+            return _export_invoices_pdf_email(invoices, installer, email_address)
+        else:
+            flash('Invalid export action.', 'danger')
+            return redirect(url_for('portal.export_invoices'))
+    
+    # GET request - show export page
+    # Get all invoices for this installer
+    all_invoices = InstallerInvoice.query.filter_by(
+        installer_id=installer.id
+    ).order_by(InstallerInvoice.created_at.desc()).all()
+    
+    return render_template(
+        'export_invoices.html',
+        installer=installer,
+        invoices=all_invoices,
+    )
+
+
+def _export_invoices_xero(invoices: List[InstallerInvoice], installer: Installer):
+    """Export multiple invoices to Xero CSV format."""
+    import csv
+    import io
+    from datetime import datetime
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Xero CSV header
+    writer.writerow([
+        '*ContactName',
+        '*InvoiceNumber',
+        '*InvoiceDate',
+        '*DueDate',
+        'InventoryItemCode',
+        '*Description',
+        '*Quantity',
+        '*UnitAmount',
+        'AccountCode',
+        '*TaxType',
+        'TaxAmount',
+        'LineAmount',
+    ])
+    
+    for invoice in invoices:
+        invoice_date = invoice.submitted_at.date() if invoice.submitted_at else datetime.utcnow().date()
+        due_date = invoice_date + timedelta(days=30)  # 30 day payment terms
+        
+        # Write invoice header line
+        writer.writerow([
+            installer.name,  # ContactName
+            invoice.invoice_number,  # InvoiceNumber
+            invoice_date.strftime('%d/%m/%Y'),  # InvoiceDate
+            due_date.strftime('%d/%m/%Y'),  # DueDate
+            '',  # InventoryItemCode
+            f"Invoice {invoice.invoice_number} - {invoice.work_order.order_number if invoice.work_order else 'N/A'}",  # Description
+            '',  # Quantity
+            '',  # UnitAmount
+            '200',  # AccountCode (Sales account - adjust as needed)
+            'GST on Income',  # TaxType
+            '',  # TaxAmount
+            '',  # LineAmount
+        ])
+        
+        # Write line items
+        for line in invoice.lines:
+            writer.writerow([
+                '',  # ContactName
+                '',  # InvoiceNumber
+                '',  # InvoiceDate
+                '',  # DueDate
+                line.product_code or '',  # InventoryItemCode
+                line.description,  # Description
+                str(line.quantity),  # Quantity
+                f"{line.unit_price:.2f}",  # UnitAmount
+                '200',  # AccountCode
+                'GST on Income' if line.tax_rate > 0 else 'Exempt',  # TaxType
+                f"{(line.quantity * line.unit_price * line.tax_rate):.2f}",  # TaxAmount
+                f"{(line.quantity * line.unit_price):.2f}",  # LineAmount
+            ])
+    
+    output.seek(0)
+    filename = f"invoices_xero_export_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+    
+    return send_file(
+        io.BytesIO(output.getvalue().encode('utf-8')),
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name=filename
+    )
+
+
+def _export_invoices_pdf_email(invoices: List[InstallerInvoice], installer: Installer, email_address: str):
+    """Export multiple invoices to PDF and email them."""
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib import colors
+        from reportlab.lib.units import inch
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.pdfgen import canvas
+        import tempfile
+        import os
+        
+        # Create temporary PDF file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+        temp_file.close()
+        
+        doc = SimpleDocTemplate(temp_file.name, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
+        elements = []
+        styles = getSampleStyleSheet()
+        
+        # Title style
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            textColor=colors.HexColor('#01998e'),
+            spaceAfter=30,
+        )
+        
+        # Generate PDF for each invoice
+        for idx, invoice in enumerate(invoices):
+            if idx > 0:
+                elements.append(PageBreak())
+            
+            # Title
+            elements.append(Paragraph(f"TAX INVOICE - {invoice.invoice_number}", title_style))
+            elements.append(Spacer(1, 0.2*inch))
+            
+            # Installer details
+            installer_info = [
+                ['From:', installer.name],
+                ['Email:', installer.email or ''],
+                ['Phone:', installer.phone or ''],
+            ]
+            if installer.crew_code:
+                installer_info.append(['Crew:', installer.crew_code])
+            
+            installer_table = Table(installer_info, colWidths=[1.5*inch, 4*inch])
+            installer_table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 0), (-1, -1), 10),
+                ('TEXTCOLOR', (0, 0), (0, -1), colors.grey),
+                ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+                ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ]))
+            elements.append(installer_table)
+            elements.append(Spacer(1, 0.3*inch))
+            
+            # Invoice details
+            invoice_date = invoice.submitted_at.strftime('%d %B %Y') if invoice.submitted_at else 'Draft'
+            invoice_info = [
+                ['Invoice Number:', invoice.invoice_number],
+                ['Invoice Date:', invoice_date],
+                ['Order Number:', invoice.work_order.order_number if invoice.work_order else 'N/A'],
+            ]
+            if invoice.work_order and invoice.work_order.job_number:
+                invoice_info.append(['Job Number:', invoice.work_order.job_number])
+            
+            invoice_table = Table(invoice_info, colWidths=[1.5*inch, 4*inch])
+            invoice_table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 10),
+                ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+                ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+            ]))
+            elements.append(invoice_table)
+            elements.append(Spacer(1, 0.3*inch))
+            
+            # Line items table
+            line_data = [['Description', 'Quantity', 'Unit Price', 'Line Total']]
+            for line in invoice.lines:
+                line_data.append([
+                    line.description,
+                    f"{line.quantity:.2f}",
+                    f"${line.unit_price:.2f}",
+                    f"${(line.quantity * line.unit_price):.2f}",
+                ])
+            
+            line_table = Table(line_data, colWidths=[3.5*inch, 0.8*inch, 1*inch, 1*inch])
+            line_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#01998e')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ]))
+            elements.append(line_table)
+            elements.append(Spacer(1, 0.3*inch))
+            
+            # Totals
+            totals_data = [
+                ['Subtotal:', f"${invoice.subtotal:.2f}"],
+                ['GST (10%):', f"${invoice.tax_amount:.2f}"],
+                ['Total:', f"${invoice.total:.2f}"],
+            ]
+            totals_table = Table(totals_data, colWidths=[1.5*inch, 1*inch])
+            totals_table.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
+                ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 11),
+                ('TEXTCOLOR', (-1, -1), (-1, -1), colors.HexColor('#01998e')),
+            ]))
+            elements.append(totals_table)
+            
+            # Notes
+            if invoice.notes:
+                elements.append(Spacer(1, 0.3*inch))
+                elements.append(Paragraph('<b>Notes:</b>', styles['Heading3']))
+                elements.append(Paragraph(invoice.notes, styles['Normal']))
+        
+        # Build PDF
+        doc.build(elements)
+        
+        # Send email with PDF attachment
+        from_address = os.getenv('REPORTS_EMAIL_ADDRESS', installer.email or 'reports@atozflooringsolutions.com.au')
+        subject = f"Invoice Export - {len(invoices)} Invoice(s)"
+        
+        # Create invoice list for email body
+        invoice_list = '\n'.join([f"<li>{inv.invoice_number} - {inv.work_order.order_number if inv.work_order else 'N/A'}</li>" for inv in invoices])
+        body = f"""
+        <html>
+        <body>
+            <p>Dear {installer.name},</p>
+            <p>Please find attached {len(invoices)} invoice(s) in PDF format:</p>
+            <ul>
+                {invoice_list}
+            </ul>
+            <p>Best regards,<br>A to Z Flooring Solutions</p>
+        </body>
+        </html>
+        """
+        
+        # Send email with attachment
+        email_sender.send_email_with_attachment(
+            from_address=from_address,
+            to_address=email_address,
+            subject=subject,
+            body=body,
+            body_type='HTML',
+            attachment_path=temp_file.name,
+            attachment_name=f"invoices_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.pdf"
+        )
+        
+        # Clean up temp file
+        os.unlink(temp_file.name)
+        
+        flash(f'Successfully exported {len(invoices)} invoice(s) to PDF and sent to {email_address}.', 'success')
+        return redirect(url_for('portal.export_invoices'))
+        
+    except ImportError:
+        flash('PDF generation requires reportlab. Install with: pip install reportlab', 'danger')
+        return redirect(url_for('portal.export_invoices'))
+    except Exception as exc:
+        current_app.logger.error(f"Failed to export invoices to PDF and email: {exc}", exc_info=True)
+        flash(f'Failed to export invoices. Error: {str(exc)}', 'danger')
+        return redirect(url_for('portal.export_invoices'))
 
 
 # ==================== ADMIN ROUTES ====================
